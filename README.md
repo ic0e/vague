@@ -48,16 +48,16 @@ cargo build --release
 
 **Usage:**
 ```bash
-vague index 
-vague search ""
+cargo run -- index 
+cargo run -- search ""
 ```
 
 `index` walks the given folder, embeds every file's contents, and saves the result to `vague_index.json` in the current directory. `search` loads that index and returns the top matches ranked by semantic similarity.
 
 Example:
 ```bash
-vague index testdata
-vague search "that one legal file"
+cargo run -- index testdata
+cargo run -- search "that one legal file"
 ```
 
 Ollama must be running in the background (it starts automatically after install) for both commands to work.

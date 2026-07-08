@@ -1,0 +1,2 @@
+- An automated script that changes desktop wallpapers based on the local weather telemetry.
+- A minimalist markdown editor that slowly hides text if you stop typing for more than 60 seconds (ghost writer mode).
