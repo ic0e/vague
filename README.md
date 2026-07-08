@@ -39,14 +39,28 @@ Requires Rust and [Ollama](https://ollama.com/) installed locally.
 ollama pull nomic-embed-text
 ```
 
-**Clone and run:**
+**Clone and build:**
 ```bash
 git clone https://github.com/ic0e/vague.git
 cd vague
-cargo run
+cargo build --release
 ```
 
-Ollama must be running in the background (it starts automatically after install) for embedding to work.
+**Usage:**
+```bash
+vague index 
+vague search ""
+```
+
+`index` walks the given folder, embeds every file's contents, and saves the result to `vague_index.json` in the current directory. `search` loads that index and returns the top matches ranked by semantic similarity.
+
+Example:
+```bash
+vague index testdata
+vague search "that one legal file"
+```
+
+Ollama must be running in the background (it starts automatically after install) for both commands to work.
 
 ## Roadmap & Future Features
 - PDF support

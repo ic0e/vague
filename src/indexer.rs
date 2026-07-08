@@ -1,5 +1,7 @@
 use walkdir::WalkDir;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct IndexEntry {
     pub path: String,
     pub text: String,

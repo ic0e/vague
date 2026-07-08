@@ -36,3 +36,17 @@ pub fn search<'a>(entries: &'a [IndexEntry], query_vector: &[f32], top_n: usize)
     scored.truncate(top_n);
     scored
 }
+
+use std::fs;
+
+pub fn save_index(entries: &[IndexEntry], path: &str) -> anyhow::Result<()> {
+    let json = serde_json::to_string(entries)?;
+    fs::write(path, json)?;
+    Ok(())
+}
+
+pub fn load_index(path: &str) -> anyhow::Result<Vec<IndexEntry>> {
+    let json = fs::read_to_string(path)?;
+    let entries: Vec<IndexEntry> = serde_json::from_str(&json)?;
+    Ok(entries)
+}
