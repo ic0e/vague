@@ -1,40 +1,56 @@
 # VAGUE • [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.html) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) [![Issues Welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/ic0e/OS-Recon/issues) [![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](https://github.com/ic0e/OS-Recon/graphs/commit-activity)
 
-> A fully local semantic file search tool. Index a folder of documents and search them by meaning instead of exact keywords, powered by local embeddings through Ollama. Nothing ever leaves your machine.
+> A fully local, multimodal semantic search engine. Index a folder of documents *and* images, then search everything by meaning instead of exact keywords or filenames. Text is embedded with a local Ollama model; images are embedded with CLIP via `fastembed`. Nothing ever leaves your machine.
 
 [![Rust](https://img.shields.io/badge/Rust-2021-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Ollama](https://img.shields.io/badge/Ollama-Local_Embeddings-000000?style=flat-square)](https://ollama.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Text_Embeddings-000000?style=flat-square)](https://ollama.com/)
+[![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP)
+[![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
-Unlike filename or keyword search, vague understands what you're looking for. A query like "that one legal file" can correctly surface a tax document with zero literal word overlap, because search is done by comparing meaning, not text matching.
+`vague` is a multimodal search pipeline. A query like *"that one legal file"* surfaces a tax document even with zero literal word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* can surface a .png the same way, since images are embedded into an actual vector space with CLIP instead of just being tagged with metadata. Text and image results get ranked together in a single list, using normalized 0-1 scores so one modality doesn't drown out the other just because its raw similarity numbers happen to run higher.
 
-> !! Early MVP: text file indexing only, no CLI arguments yet, single-folder search.
+> !! Early MVP: single-folder indexing, no CLI arguments for advanced filtering yet.
 
 ## How it works
 
-1. Files in a target folder are read and their text content is extracted.
-2. Each file's text is converted into a vector embedding using a local Ollama model (`nomic-embed-text`), run entirely on your machine.
-3. A search query is embedded the same way, then compared against every indexed file using cosine similarity.
-4. Results are ranked by similarity and returned.
+**Text (`.txt`, `.md`, ...)**
+1. File content is extracted and sent to a local Ollama model (`nomic-embed-text`) to produce a vector embedding.
+2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
 
-No API calls, no cloud services, no data sent anywhere. The only network activity is Ollama's one-time model download.
+**Images (`.png`, `.jpg`, `.jpeg`, `.webp`)**
+1. Images are embedded directly into vector space using **CLIP**, run locally via [`fastembed`](https://github.com/Anush008/fastembed-rs) (Rust bindings over ONNX Runtime). No captioning step, no LLM in the loop — the image itself becomes a vector.
+2. Search queries are embedded through CLIP's own text encoder to land in the same space as the image vectors.
+
+**Merged ranking**
+Text and image results come from two different embedding spaces that aren't directly comparable on raw cosine score, so each result set is normalized to a 0-1 scale before being combined into a single ranked list — meaning a strong image match and a strong text match can both surface near the top, instead of one modality silently dominating the other because its raw scores happen to run higher.
+
+No API calls, no cloud services, no data sent anywhere. The only network activity is the one-time model downloads (Ollama's `nomic-embed-text`, and CLIP's ONNX weights pulled automatically by `fastembed` on first run).
 
 ## Current Project Layout
 ```
 vague/
 ├── src/
 │   ├── main.rs        # entry point, wires indexing and search together
-│   ├── embedder.rs    # calls local Ollama API to generate embeddings
+│   ├── embedder.rs    # calls local Ollama API for text embeddings
+│   ├── clip.rs         # CLIP image + text-query embeddings via fastembed
 │   ├── extract.rs     # reads text content from files
 │   ├── indexer.rs      # walks a folder and builds the searchable index
-│   └── store.rs        # cosine similarity and ranked search
+│   └── store.rs        # normalized similarity scoring and merged ranked search
 ```
+
+## Requirements
+
+- [Rust](https://www.rust-lang.org/) (2021 edition)
+- [Ollama](https://ollama.com/) installed and running locally, with the `nomic-embed-text` model pulled
+- **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
+  - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++"** workload selected.
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Linux**: `build-essential` (or your distro's equivalent, e.g. `sudo apt install build-essential`)
 
 ## How to Run
 
-Requires Rust and [Ollama](https://ollama.com/) installed locally.
-
-**Pull the embedding model:**
+**Pull the text embedding model:**
 ```bash
 ollama pull nomic-embed-text
 ```
@@ -45,30 +61,48 @@ git clone https://github.com/ic0e/vague.git
 cd vague
 cargo build --release
 ```
+CLIP's ONNX weights are downloaded automatically by `fastembed` on first run — no separate pull step needed.
 
 **Usage:**
 ```bash
-cargo run -- index 
-cargo run -- search ""
+cargo run -- index <folder>
+cargo run -- search "<query>"
 ```
-
-`index` walks the given folder, embeds every file's contents, and saves the result to `vague_index.json` in the current directory. `search` loads that index and returns the top matches ranked by semantic similarity.
+`index` walks the given folder, embeds every supported file (text via Ollama, images via CLIP), and saves the result to `vague_index.json`. `search` loads that index and returns the top matches across both text and images, ranked together by normalized similarity.
 
 Example:
 ```bash
 cargo run -- index testdata
 cargo run -- search "that one legal file"
+cargo run -- search "a cute dog sitting on grass"
+```
+Ollama must be running in the background (it starts automatically after install) for text indexing and search to work.
+
+A rough idea of what results look like:
+```bash
+Top results for 'dogs sitting on grass':
+1.0000 - testdata\many_dogs.jpg # a picture of multiple dogs sitting on a grass field
+1.0000 - testdata\dog.txt
+0.8319 - testdata\dog_in_grass.jpg
+0.5892 - testdata\cat.txt
+0.3423 - testdata\rust_notes.txt
 ```
 
-Ollama must be running in the background (it starts automatically after install) for both commands to work.
+```bash
+Top results for 'dog sitting on grass':
+1.0000 - testdata\dog_in_grass.jpg # a picture of a SINGLE dog being in the grass
+1.0000 - testdata\dog.txt
+0.6825 - testdata\many_dogs.jpg
+0.3786 - testdata\cat.txt
+0.2972 - testdata\rust_notes.txt
+```
 
 ## Roadmap & Future Features
 - PDF support
-- CLI arguments for folder path and query
-- Persisted index (avoid re embedding on every run)
-- Image search support
+- Persisted index (avoid re-embedding on every run)
+- Video support (frame extraction + CLIP embedding per frame)
 
 ## License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-> README.md last updated on July 7th 2026.
+> README.md last updated on July 9th 2026.
