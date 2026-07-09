@@ -1,11 +1,12 @@
 use walkdir::WalkDir;
 use serde::{Serialize, Deserialize};
+use reqwest::blocking::Client;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub enum EmbeddingType {
-    /// CLIP image-encoder vector (for PNG/JPG/etc.)
+    // CLIP processing
     Clip,
-    /// Nomic text-encoder vector (for txt/md/etc.)
+    // the normal text encoder
     Text,
 }
 
@@ -19,6 +20,7 @@ pub struct IndexEntry {
 
 pub fn build_index(folder: &std::path::Path) -> anyhow::Result<Vec<IndexEntry>> {
     let mut result: Vec<IndexEntry> = Vec::new();
+    let client = Client::new();
     
     for entry in WalkDir::new(folder) {
         let entry = match entry {
@@ -44,7 +46,7 @@ pub fn build_index(folder: &std::path::Path) -> anyhow::Result<Vec<IndexEntry>> 
             }
             _ => {
                 let text = crate::extract::extract_text(&path)?;
-                let vector = crate::embedder::embed_text(&text)?;
+                let vector = crate::embedder::embed_text(&client, &text)?;
                 (text, vector, EmbeddingType::Text)
             }
         };

@@ -1,5 +1,6 @@
 use std::path::Path;
 use clap::{Parser, Subcommand};
+use reqwest::blocking::Client;
 
 mod embedder;
 mod extract;
@@ -28,6 +29,8 @@ enum Commands {
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+
+    let client = Client::new();
     
     match cli.command {
         Commands::Index { folder } => {
@@ -38,7 +41,7 @@ fn main() -> anyhow::Result<()> {
         Commands::Search { query } => {
             let entries = store::load_index("vague_index.json")?;
             let clip_query = clip::embed_query(&query)?;
-            let text_query = embedder::embed_text(&query)?;
+            let text_query = embedder::embed_text(&client, &query)?;
             let results = store::search(&entries, &clip_query, &text_query, 5);
             
             println!("Top results for '{}':", query);

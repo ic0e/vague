@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use reqwest::blocking::Client;
 
-pub fn embed_text(text: &str) -> anyhow::Result<Vec<f32>> {
-    let client = Client::new();
-
+pub fn embed_text(client: &Client, text: &str) -> anyhow::Result<Vec<f32>> {
     // create a hashmap with the json request
     let mut json_map = HashMap::new();
     json_map.insert("model", "nomic-embed-text");
