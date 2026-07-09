@@ -5,6 +5,7 @@ mod embedder;
 mod extract;
 mod indexer;
 mod store;
+mod clip;
 
 
 #[derive(Parser)]
@@ -36,8 +37,9 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Search { query } => {
             let entries = store::load_index("vague_index.json")?;
-            let query_vector = embedder::embed_text(&query)?;
-            let results = store::search(&entries, &query_vector, 3);
+            let clip_query = clip::embed_query(&query)?;
+            let text_query = embedder::embed_text(&query)?;
+            let results = store::search(&entries, &clip_query, &text_query, 5);
             
             println!("Top results for '{}':", query);
                 for (entry, score) in results {
