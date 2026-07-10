@@ -59,32 +59,40 @@ cargo install --path .
 
 ## Setup
 
-Before using `vague`, pull the text embedding model:
+Before using `vague`, pull the text embedding model and download the CLIP models:
+
 ```bash
 ollama pull nomic-embed-text
+vague setup
 ```
 
-CLIP's ONNX weights are downloaded automatically on first run.
+`vague setup` downloads CLIP's image and text models into `~/.vague_cache` on first run. This only needs to happen once - afterward, `index` and `search` start instantly. (NOTE: when running `vague search` or `vague index`, the program will automatically download the needed model.)
 
 ## Usage
 
-Once installed, use `vague` as a global command:
+Once set up, `vague` works as a global command from any directory. Ollama must be running in the background.
 
+Basic syntax:
 ```bash
-vague index 
-vague search ""
+vague index <folder>
+vague search "<query>"
+vague search "<query>" --limit <num>
 ```
 
-**Examples:**
+Examples:
 ```bash
 vague index testdata
 vague search "that one legal file"
 vague search "a cute dog sitting on grass"
 vague search "dog sitting on grass" --limit 6
 ```
-NOTE: after installing, vague works in any folder you have open.
 
-Ollama must be running in the background for text indexing and search to work.
+For full command reference:
+```bash
+vague --help
+vague index --help
+vague search --help
+```
 
 ## Development
 
