@@ -48,53 +48,53 @@ vague/
   - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
   - **Linux**: `build-essential` (or your distro's equivalent, e.g. `sudo apt install build-essential`)
 
-## How to Run
+## Installation
 
-**Pull the text embedding model:**
+**From source:**
+```bash
+git clone https://github.com/ic0e/vague.git
+cd vague
+cargo install --path .
+```
+
+## Setup
+
+Before using `vague`, pull the text embedding model:
 ```bash
 ollama pull nomic-embed-text
 ```
 
-**Clone and build:**
+CLIP's ONNX weights are downloaded automatically on first run.
+
+## Usage
+
+Once installed, use `vague` as a global command:
+
+```bash
+vague index 
+vague search ""
+```
+
+**Examples:**
+```bash
+vague index testdata
+vague search "that one legal file"
+vague search "a cute dog sitting on grass"
+vague search "dog sitting on grass" --limit 6
+```
+NOTE: after installing, vague works in any folder you have open.
+
+Ollama must be running in the background for text indexing and search to work.
+
+## Development
+
+To build and run from source:
 ```bash
 git clone https://github.com/ic0e/vague.git
 cd vague
 cargo build --release
-```
-CLIP's ONNX weights are downloaded automatically by `fastembed` on first run — no separate pull step needed.
-
-**Usage:**
-```bash
 cargo run -- index <folder>
 cargo run -- search "<query>"
-```
-`index` walks the given folder, embeds every supported file (text via Ollama, images via CLIP), and saves the result to `vague_index.json`. `search` loads that index and returns the top matches across both text and images, ranked together by normalized similarity.
-
-Example:
-```bash
-cargo run -- index testdata
-cargo run -- search "that one legal file"
-cargo run -- search "a cute dog sitting on grass"
-```
-Ollama must be running in the background (it starts automatically after install) for text indexing and search to work.
-
-A rough idea of what results look like:
-```bash
-Top results for 'dogs sitting on grass':
-1.0000 - testdata\many_dogs.jpg # a picture of multiple dogs sitting on a grass field
-1.0000 - testdata\dog.txt
-0.8319 - testdata\dog_in_grass.jpg
-0.5892 - testdata\cat.txt
-0.3423 - testdata\rust_notes.txt
-```
-
-```bash
-Top results for 'dog sitting on grass':
-1.0000 - testdata\dog_in_grass.jpg # a picture of a SINGLE dog being in the grass
-1.0000 - testdata\dog.txt
-0.6825 - testdata\many_dogs.jpg
-0.3786 - testdata\cat.txt
-0.2972 - testdata\rust_notes.txt
 ```
 
 ## Roadmap & Future Features
