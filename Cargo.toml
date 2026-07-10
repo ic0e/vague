@@ -12,3 +12,4 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 fastembed = "5"
 rayon = "1.10"
+indicatif = "0.18.6"

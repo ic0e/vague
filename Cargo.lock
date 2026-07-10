@@ -2834,6 +2834,7 @@ dependencies = [
  "anyhow",
  "clap",
  "fastembed",
+ "indicatif",
  "rayon",
  "reqwest",
  "serde",
