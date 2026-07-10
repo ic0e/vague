@@ -10,7 +10,7 @@
 
 `vague` is a multimodal search pipeline. A query like *"that one legal file"* surfaces a tax document even with zero literal word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* can surface a .png the same way, since images are embedded into an actual vector space with CLIP instead of just being tagged with metadata. Text and image results get ranked together in a single list, using normalized 0-1 scores so one modality doesn't drown out the other just because its raw similarity numbers happen to run higher.
 
-> !! Early MVP: single-folder indexing, no CLI arguments for advanced filtering yet.
+> !! Early MVP: simple indexing, no CLI arguments for advanced filtering yet.
 
 ## How it works
 
@@ -107,7 +107,6 @@ cargo run -- search "<query>"
 
 ## Roadmap & Future Features
 - PDF support
-- Persisted index (avoid re-embedding on every run)
 - Video support (frame extraction + CLIP embedding per frame)
 
 ## License
