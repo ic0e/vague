@@ -8,7 +8,6 @@ mod indexer;
 mod store;
 mod clip;
 
-
 #[derive(Parser)]
 #[command(name = "vague")]
 struct Cli {
@@ -26,10 +25,8 @@ enum Commands {
     },
 }
 
-
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-
     let client = Client::new();
     
     match cli.command {
@@ -40,14 +37,19 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Search { query } => {
             let entries = store::load_index("vague_index.json")?;
-            let clip_query = clip::embed_query(&query)?;
+            
+            let mut text_model = fastembed::TextEmbedding::try_new(
+                fastembed::TextInitOptions::new(fastembed::EmbeddingModel::ClipVitB32)
+            )?;
+            
+            let clip_query = clip::embed_query(&mut text_model, &query)?;
             let text_query = embedder::embed_text(&client, &query)?;
             let results = store::search(&entries, &clip_query, &text_query, 5);
             
             println!("Top results for '{}':", query);
-                for (entry, score) in results {
-                    println!("{:.4} - {}", score, entry.path);
-                }
+            for (entry, score) in results {
+                println!("{:.4} - {}", score, entry.path);
+            }
         }
     }
 
