@@ -22,9 +22,13 @@ pub struct IndexEntry {
 pub fn build_index(folder: &std::path::Path) -> anyhow::Result<Vec<IndexEntry>> {
     let client = Client::new();
     
-    // wrap the model in mutex
+    let cache_dir = dirs::home_dir()
+            .map(|p| p.join(".vague_cache"))
+            .unwrap_or_else(|| std::path::PathBuf::from(".fastembed_cache"));
+    
+        // Force model to use global cache dir so it never downloads into the working directory
     let image_model = Mutex::new(ImageEmbedding::try_new(
-        ImageInitOptions::new(ImageEmbeddingModel::ClipVitB32)
+        ImageInitOptions::new(ImageEmbeddingModel::ClipVitB32).with_cache_dir(cache_dir)
     )?);
 
     let entries: Vec<_> = WalkDir::new(folder)
@@ -68,8 +72,9 @@ pub fn build_index(folder: &std::path::Path) -> anyhow::Result<Vec<IndexEntry>> 
                     }
                     _ => {
                         let text = crate::extract::extract_text(&path).ok()?;
+                        
                         let vector = crate::embedder::embed_text(&client, &text).ok()?;
-                        (text, vector, EmbeddingType::Text)
+                                                (text, vector, EmbeddingType::Text)
                     }
                 };
 

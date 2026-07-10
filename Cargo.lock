@@ -2843,6 +2843,7 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
+ "dirs",
  "fastembed",
  "indicatif",
  "rayon",
