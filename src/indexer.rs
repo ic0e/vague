@@ -3,7 +3,6 @@ use serde::{Serialize, Deserialize};
 use reqwest::blocking::Client;
 use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
-use std::sync::Mutex;
 use std::path::{Path, PathBuf};
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
@@ -29,10 +28,11 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
         .map(|p| p.join(".vague_cache"))
         .unwrap_or_else(|| PathBuf::from(".fastembed_cache"));
 
-    // force model to use global cache dir so it never downloads into the working directory
-    let image_model = Mutex::new(ImageEmbedding::try_new(
-        ImageInitOptions::new(ImageEmbeddingModel::ClipVitB32).with_cache_dir(cache_dir)
-    )?);
+    // Thread local macro, in order for the program to actually work with
+    // multiple cores, the model can't be in a single variable to avoid it getting locked.
+    thread_local! {
+        static TLS_IMAGE_MODEL: std::cell::RefCell<Option<ImageEmbedding>> = std::cell::RefCell::new(None);
+    }
 
     let pb = indicatif::ProgressBar::new(paths.len() as u64);
     pb.set_style(
@@ -56,16 +56,30 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
 
                 match extension.as_str() {
                     "png" | "jpg" | "jpeg" | "webp" | "bmp" => {
-                        // handle images sequentially within this thread chunk
-                        if let Some(mut model_lock) = image_model.lock().ok() {
-                            if let Some(vector) = crate::clip::embed_image(&mut *model_lock, path).ok() {
-                                chunk_entries.push(IndexEntry {
-                                    path: path.to_string_lossy().to_string(),
-                                    text: filename.to_string(),
-                                    vector,
-                                    embedding_type: EmbeddingType::Clip,
-                                });
+                        // call the thread block and save the result to vector_res 
+                        let vector_res = TLS_IMAGE_MODEL.with(|cell| {
+                            let mut borrow = cell.borrow_mut();
+
+                            if borrow.is_none() {
+                                if let Ok(model) = ImageEmbedding::try_new(
+                                    ImageInitOptions::new(ImageEmbeddingModel::ClipVitB32).with_cache_dir(cache_dir.clone())
+                                ) {
+                                    *borrow = Some(model);
+                                }
                             }
+                            if let Some(model) = borrow.as_mut() {
+                                crate::clip::embed_image(model, path).ok()
+                            } else {
+                                None
+                            }
+                        });
+                        if let Some(vector) = vector_res {
+                                chunk_entries.push(IndexEntry {
+                                path: path.to_string_lossy().to_string(),
+                                text: filename.to_string(),
+                                vector,
+                                embedding_type: EmbeddingType::Clip,
+                            });
                         }
                         pb.inc(1);
                     }

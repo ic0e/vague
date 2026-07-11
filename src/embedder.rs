@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use reqwest::blocking::Client;
 
 pub fn embed_text_batch(client: &Client, texts: &[String]) -> anyhow::Result<Vec<Vec<f32>>> {
@@ -7,7 +6,7 @@ pub fn embed_text_batch(client: &Client, texts: &[String]) -> anyhow::Result<Vec
         json_map.insert("model", serde_json::json!("nomic-embed-text"));
         json_map.insert("input", serde_json::json!(texts));
         
-    let res = client.post("http://localhost:11434/api/embeddings")
+    let res = client.post("http://localhost:11434/api/embed")
         .json(&json_map)
         .send()?;
 
