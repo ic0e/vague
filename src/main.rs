@@ -132,14 +132,14 @@ fn main() -> anyhow::Result<()> {
                     .filter_map(|e| std::fs::canonicalize(e.path()).ok())
                     .collect();
 
-                let current_path_set: HashSet<String> = current_paths
+                let _current_path_set: HashSet<String> = current_paths
                     .iter()
                     .map(|p| p.to_string_lossy().to_string())
                     .collect();
 
                 // split existing entries into:
-                //   - entries belonging to OTHER folders (always kept)
-                //   - entries belonging to THIS folder (pruned if file deleted)
+                //    - entries belonging to OTHER folders (always kept)
+                //    - entries belonging to THIS folder (pruned if file deleted)
                 let (in_folder, outside_folder): (Vec<_>, Vec<_>) =
                     existing.into_iter().partition(|e| {
                         if let Ok(canon_entry) = std::fs::canonicalize(&e.path) {
@@ -211,7 +211,7 @@ fn main() -> anyhow::Result<()> {
 
         Commands::Search { query, limit } => {
             let spinner = indicatif::ProgressBar::new_spinner();
-            spinner.set_style(
+            let _ = spinner.set_style(
                 indicatif::ProgressStyle::default_spinner()
                     .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
                     .template("{spinner:.green} {msg}")
@@ -230,10 +230,17 @@ fn main() -> anyhow::Result<()> {
 
             let mut text_model = fastembed::TextEmbedding::try_new(
                 fastembed::TextInitOptions::new(fastembed::EmbeddingModel::ClipVitB32).with_cache_dir(cache_dir)
-            )?;
+            )? ;
 
             let clip_query = clip::embed_query(&mut text_model, &query)?;
-            let text_query = embedder::embed_text(&client, &query)?;
+
+            // FIX: Pass query as a single-item slice, then extract the single vector from the returned Vec<Vec<f32>>
+            let text_query_batch = embedder::embed_text_batch(&client, &[query.clone()])?;
+            let text_query = text_query_batch
+                .into_iter()
+                .next()
+                .ok_or_else(|| anyhow::anyhow!("Ollama returned an empty embedding batch for the search query"))?;
+
             let results = store::search(&entries, &clip_query, &text_query, limit);
 
             spinner.finish_and_clear();

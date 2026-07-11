@@ -43,37 +43,68 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
     );
 
     let result: Vec<IndexEntry> = paths
-        .par_iter()
-        .filter_map(|path| {
-            let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
-            let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+        .par_chunks(32) // process 32 files at a time per thread to optimize network batching
+        .flat_map(|chunk| {
+            let mut chunk_entries = Vec::new();
+            let mut pending_texts = Vec::new();
+            let mut pending_paths = Vec::new();
 
-            pb.set_message(filename.to_string());
+            for path in chunk {
+                let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+                let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("");
+                pb.set_message(filename.to_string());
 
-            let (text, vector, embedding_type) = match extension.as_str() {
-                "png" | "jpg" | "jpeg" | "webp" | "bmp" => {
-                    let filename = path.file_name().and_then(|s| s.to_str()).unwrap_or("").to_string();
-                    let vector = {
-                        let mut model_lock = image_model.lock().ok()?;
-                        crate::clip::embed_image(&mut *model_lock, path).ok()?
-                    };
-                    (filename, vector, EmbeddingType::Clip)
+                match extension.as_str() {
+                    "png" | "jpg" | "jpeg" | "webp" | "bmp" => {
+                        // handle images sequentially within this thread chunk
+                        if let Some(mut model_lock) = image_model.lock().ok() {
+                            if let Some(vector) = crate::clip::embed_image(&mut *model_lock, path).ok() {
+                                chunk_entries.push(IndexEntry {
+                                    path: path.to_string_lossy().to_string(),
+                                    text: filename.to_string(),
+                                    vector,
+                                    embedding_type: EmbeddingType::Clip,
+                                });
+                            }
+                        }
+                        pb.inc(1);
+                    }
+                    _ => {
+                        // extract text, but hold off on the HTTP call to batch it later
+                        if let Some(text) = crate::extract::extract_text(path).ok() {
+                            pending_texts.push(text);
+                            pending_paths.push(path);
+                        } else {
+                            // if extraction fails, still increment progress bar
+                            pb.inc(1);
+                        }
+                    }
                 }
-                _ => {
-                    let text = crate::extract::extract_text(path).ok()?;
-                    let vector = crate::embedder::embed_text(&client, &text).ok()?;
-                    (text, vector, EmbeddingType::Text)
+            }
+
+            // send all text files collected from this chunk to ollama in one batch request
+            if !pending_texts.is_empty() {
+                if let Some(vectors) = crate::embedder::embed_text_batch(&client, &pending_texts).ok() {
+                    // match the returned vectors back up to their corresponding files
+                    for (i, vector) in vectors.into_iter().enumerate() {
+                        let path = pending_paths[i];
+                        let text = std::mem::take(&mut pending_texts[i]);
+                        
+                        chunk_entries.push(IndexEntry {
+                            path: path.to_string_lossy().to_string(),
+                            text,
+                            vector,
+                            embedding_type: EmbeddingType::Text,
+                        });
+                        pb.inc(1);
+                    }
+                } else {
+                    // if the batch network call completely failed, make sure progress bar still updates
+                    pb.inc(pending_paths.len() as u64);
                 }
-            };
+            }
 
-            pb.inc(1);
-
-            Some(IndexEntry {
-                path: path.to_string_lossy().to_string(),
-                text,
-                vector,
-                embedding_type,
-            })
+            chunk_entries
         })
         .collect();
 
