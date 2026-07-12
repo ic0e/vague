@@ -1,9 +1,8 @@
 # VAGUE • [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.html) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) [![Issues Welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/ic0e/OS-Recon/issues) [![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](https://github.com/ic0e/OS-Recon/graphs/commit-activity)
 
-> A fully local, multimodal semantic search engine. Index a folder of documents *and* images, then search everything by meaning instead of exact keywords or filenames. Text is embedded with a local Ollama model; images are embedded with CLIP via `fastembed`. Nothing ever leaves your machine.
+> A fully local, multimodal semantic search engine. Index a folder of documents *and* images, then search everything by meaning instead of exact keywords or filenames. Text is embedded with a local model, images are embedded with CLIP, both via `fastembed`. Nothing ever leaves your machine.
 
 [![Rust](https://img.shields.io/badge/Rust-2021-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![Ollama](https://img.shields.io/badge/Ollama-Text_Embeddings-000000?style=flat-square)](https://ollama.com/)
 [![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP)
 [![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -15,7 +14,7 @@
 ## How it works
 
 **Text (`.txt`, `.md`, ...)**
-1. File content is extracted and sent to a local Ollama model (`nomic-embed-text`) to produce a vector embedding.
+1. File content is extracted and sent to a local text embedding model (`nomic-embed-text`) to produce a vector embedding.
 2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
 
 **Images (`.png`, `.jpg`, `.jpeg`, `.webp`)**
@@ -25,14 +24,14 @@
 **Merged ranking**
 Text and image results come from two different embedding spaces that aren't directly comparable on raw cosine score, so each result set is normalized to a 0-1 scale before being combined into a single ranked list — meaning a strong image match and a strong text match can both surface near the top, instead of one modality silently dominating the other because its raw scores happen to run higher.
 
-No API calls, no cloud services, no data sent anywhere. The only network activity is the one-time model downloads (Ollama's `nomic-embed-text`, and CLIP's ONNX weights pulled automatically by `fastembed` on first run).
+No API calls, no cloud services, no data leaving the machine. The only network activity is the one time model downloads from fastembed.
 
 ## Current Project Layout
 ```
 vague/
 ├── src/
 │   ├── main.rs        # entry point, wires indexing and search together
-│   ├── embedder.rs    # calls local Ollama API for text embeddings
+│   ├── embedder.rs    # embeds text using `nomic-text-embed`
 │   ├── clip.rs         # CLIP image + text-query embeddings via fastembed
 │   ├── extract.rs     # reads text content from files
 │   ├── indexer.rs      # walks a folder and builds the searchable index
@@ -42,7 +41,6 @@ vague/
 ## Requirements
 
 - [Rust](https://www.rust-lang.org/) (2021 edition)
-- [Ollama](https://ollama.com/) installed and running locally, with the `nomic-embed-text` model pulled
 - **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
   - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++"** workload selected.
   - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
@@ -62,7 +60,6 @@ cargo install --path .
 Before using `vague`, pull the text embedding model and download the CLIP models:
 
 ```bash
-ollama pull nomic-embed-text
 vague setup
 ```
 
@@ -70,7 +67,7 @@ vague setup
 
 ## Usage
 
-Once set up, `vague` works as a global command from any directory. Ollama must be running in the background.
+Once set up, `vague` works as a global command from any directory.
 
 Basic syntax:
 ```bash
