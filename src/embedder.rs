@@ -1,18 +1,25 @@
-use reqwest::blocking::Client;
+use fastembed::{TextEmbedding, TextInitOptions, EmbeddingModel};
 
-pub fn embed_text_batch(client: &Client, texts: &[String]) -> anyhow::Result<Vec<Vec<f32>>> {
-    // create a hashmap with the batch for the request
-    let mut json_map = std::collections::HashMap::new();
-        json_map.insert("model", serde_json::json!("nomic-embed-text"));
-        json_map.insert("input", serde_json::json!(texts));
-        
-    let res = client.post("http://localhost:11434/api/embed")
-        .json(&json_map)
-        .send()?;
+thread_local! {
+    static TLS_TEXT_MODEL: std::cell::RefCell<Option<TextEmbedding>> = std::cell::RefCell::new(None);
+}
 
-    let parsed: serde_json::Value = res.json()?;
-    
-    let embeddings: Vec<Vec<f32>> = serde_json::from_value(parsed["embeddings"].clone())?;
-    
-    Ok(embeddings)
+pub fn embed_text_batch(texts: &[String], cache_dir: std::path::PathBuf) -> anyhow::Result<Vec<Vec<f32>>> {
+    TLS_TEXT_MODEL.with(|cell| {
+        let mut borrow = cell.borrow_mut();
+        if borrow.is_none() {
+            if let Ok(model) = TextEmbedding::try_new(
+                TextInitOptions::new(EmbeddingModel::NomicEmbedTextV15)
+                    .with_show_download_progress(true)
+                    .with_cache_dir(cache_dir)
+            ) {
+                *borrow = Some(model);
+            }
+        }
+        if let Some(model) = borrow.as_mut() {
+            model.embed(texts, None)
+        } else {
+            Err(anyhow::anyhow!("Failed to load text embedding model"))
+        }
+    })
 }

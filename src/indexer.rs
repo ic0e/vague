@@ -1,6 +1,5 @@
 use walkdir::WalkDir;
 use serde::{Serialize, Deserialize};
-use reqwest::blocking::Client;
 use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
 use std::path::{Path, PathBuf};
@@ -24,8 +23,6 @@ pub struct IndexEntry {
 /// Embeds a specific list of file paths and returns their index entries.
 /// Used for both full indexing and incremental (new-files-only) indexing.
 pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
-    let client = Client::new();
-
     let cache_dir = dirs::home_dir()
         .map(|p| p.join(".vague_cache"))
         .unwrap_or_else(|| PathBuf::from(".fastembed_cache"));
@@ -111,7 +108,7 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
 
             // send all text files collected from this chunk to ollama in one batch request
             if !pending_texts.is_empty() {
-                if let Some(vectors) = crate::embedder::embed_text_batch(&client, &pending_texts).ok() {
+                if let Some(vectors) = crate::embedder::embed_text_batch(&pending_texts, cache_dir.clone()).ok() {
                     // match the returned vectors back up to their corresponding files
                     for (i, vector) in vectors.into_iter().enumerate() {
                         let path = pending_paths[i];

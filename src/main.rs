@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::collections::HashSet;
 use clap::{Parser, Subcommand};
-use reqwest::blocking::Client;
 use colored::*;
 use walkdir::WalkDir;
 
@@ -63,7 +62,6 @@ enum Commands {
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let client = Client::new();
 
     // set up a unified, global database directory (e.g., C:\Users\User\.vague_cache\)
     let cache_dir = dirs::home_dir()
@@ -229,13 +227,12 @@ fn main() -> anyhow::Result<()> {
             let entries = store::load_index(db_path.to_str().unwrap())?;
 
             let mut text_model = fastembed::TextEmbedding::try_new(
-                fastembed::TextInitOptions::new(fastembed::EmbeddingModel::ClipVitB32).with_cache_dir(cache_dir)
+                fastembed::TextInitOptions::new(fastembed::EmbeddingModel::ClipVitB32).with_cache_dir(cache_dir.clone())
             )? ;
 
             let clip_query = clip::embed_query(&mut text_model, &query)?;
 
-            // FIX: Pass query as a single-item slice, then extract the single vector from the returned Vec<Vec<f32>>
-            let text_query_batch = embedder::embed_text_batch(&client, &[query.clone()])?;
+            let text_query_batch = embedder::embed_text_batch(&[query.clone()], cache_dir.clone())?;
             let text_query = text_query_batch
                 .into_iter()
                 .next()
@@ -284,7 +281,7 @@ fn main() -> anyhow::Result<()> {
             println!("{}", "This only needs to run once.".dimmed());
 
             // download the CLIP image model
-            println!("\n{}", "[1/2] Downloading CLIP image model (ClipVitB32)...".yellow());
+            println!("\n{}", "[1/3] Downloading CLIP image model (ClipVitB32)...".yellow());
             fastembed::ImageEmbedding::try_new(
                 fastembed::ImageInitOptions::new(fastembed::ImageEmbeddingModel::ClipVitB32)
                     .with_cache_dir(cache_dir.clone())
@@ -292,9 +289,16 @@ fn main() -> anyhow::Result<()> {
             println!("{}", "     ✓ Image model ready.".green());
 
             // download the CLIP text model
-            println!("\n{}", "[2/2] Downloading CLIP text model (ClipVitB32)...".yellow());
+            println!("\n{}", "[2/3] Downloading CLIP text model (ClipVitB32)...".yellow());
             fastembed::TextEmbedding::try_new(
                 fastembed::TextInitOptions::new(fastembed::EmbeddingModel::ClipVitB32)
+                    .with_cache_dir(cache_dir.clone())
+            )?;
+            println!("{}", "     ✓ CLIP text model ready.".green());
+            
+            println!("\n{}", "[3/3] Downloading text embedding model (Nomic)...".yellow());
+            fastembed::TextEmbedding::try_new(
+                fastembed::TextInitOptions::new(fastembed::EmbeddingModel::NomicEmbedTextV15)
                     .with_cache_dir(cache_dir.clone())
             )?;
             println!("{}", "     ✓ Text model ready.".green());
