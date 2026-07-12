@@ -5,7 +5,6 @@
 [![Rust](https://img.shields.io/badge/Rust-2021-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP)
 [![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 `vague` is a multimodal search pipeline. A query like *"that one legal file"* surfaces a tax document even with zero literal word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* can surface a .png the same way, since images are embedded into an actual vector space with CLIP instead of just being tagged with metadata. Text and image results get ranked together in a single list, using normalized 0-1 scores so one modality doesn't drown out the other just because its raw similarity numbers happen to run higher.
 

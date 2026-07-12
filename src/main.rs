@@ -157,6 +157,7 @@ fn main() -> anyhow::Result<()> {
                     .filter(|e| Path::new(&e.path).exists())
                     .collect();
                 let pruned = in_folder_count - kept.len();
+                let mut skipped: usize = 0;
 
                 // build a set of already-indexed canonical paths so we skip them
                 let already_indexed: HashSet<String> = kept
@@ -188,7 +189,7 @@ fn main() -> anyhow::Result<()> {
                 let new_entries = if new_paths.is_empty() {
                     vec![]
                 } else {
-                    indexer::index_file_list(&new_paths)?
+                    indexer::index_file_list(&new_paths, &mut skipped)?
                 };
 
                 // merge: other folders + surviving in-folder entries + newly embedded
@@ -199,10 +200,11 @@ fn main() -> anyhow::Result<()> {
                 store::save_index(&final_entries, db_path.to_str().unwrap())?;
 
                 println!(
-                    "Done. Index now has {} entries total  (+{} added, {} pruned).",
+                    "Done. Index now has {} entries total  (+{} added, {} pruned, {} skipped).",
                     final_entries.len(),
                     added,
-                    pruned
+                    pruned,
+                    skipped
                 );
             }
         }

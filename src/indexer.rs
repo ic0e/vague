@@ -2,9 +2,11 @@ use walkdir::WalkDir;
 use serde::{Serialize, Deserialize};
 use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::{Path, PathBuf};
 use pdf_oxide::PdfDocument;
 use std::error::Error;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub enum EmbeddingType {
@@ -22,7 +24,7 @@ pub struct IndexEntry {
 
 /// Embeds a specific list of file paths and returns their index entries.
 /// Used for both full indexing and incremental (new-files-only) indexing.
-pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
+pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result<Vec<IndexEntry>> {
     let cache_dir = dirs::home_dir()
         .map(|p| p.join(".vague_cache"))
         .unwrap_or_else(|| PathBuf::from(".fastembed_cache"));
@@ -32,6 +34,8 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
     thread_local! {
         static TLS_IMAGE_MODEL: std::cell::RefCell<Option<ImageEmbedding>> = std::cell::RefCell::new(None);
     }
+
+    let skipped_atomic = Arc::new(AtomicUsize::new(0));
 
     let pb = indicatif::ProgressBar::new(paths.len() as u64);
     pb.set_style(
@@ -44,6 +48,7 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
     let result: Vec<IndexEntry> = paths
         .par_chunks(32) // process 32 files at a time per thread to optimize network batching
         .flat_map(|chunk| {
+            let skipped = skipped_atomic.clone();
             let mut chunk_entries = Vec::new();
             let mut pending_texts = Vec::new();
             let mut pending_paths = Vec::new();
@@ -89,6 +94,7 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
                             pending_paths.push(path);
                         } else {
                             // if extraction fails, still increment progress bar
+                            skipped.fetch_add(1, Ordering::Relaxed);
                             pb.inc(1);
                         }
                     }
@@ -134,6 +140,7 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
 
     pb.finish_with_message("Done!");
 
+    *skipped = skipped_atomic.load(Ordering::Relaxed);
     Ok(result)
 }
 
@@ -146,8 +153,10 @@ pub fn build_index(folder: &Path) -> anyhow::Result<Vec<IndexEntry>> {
         .filter(|e| e.file_type().is_file())
         .map(|e| e.path().to_path_buf())
         .collect();
+    
+    let mut skipped: usize = 0;
 
-    index_file_list(&paths)
+    index_file_list(&paths, &mut skipped)
 }
 
 fn extract_pdf_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
