@@ -106,8 +106,9 @@ cargo run -- search "<query>"
 ```
 
 ## Roadmap & Future Features
-- PDF support
+- Docx support
 - Video support (frame extraction + CLIP embedding per frame)
+- Further optimization of indexing and searching
 
 ## License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

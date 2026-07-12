@@ -4,6 +4,8 @@ use reqwest::blocking::Client;
 use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
 use std::path::{Path, PathBuf};
+use pdf_oxide::PdfDocument;
+use std::error::Error;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub enum EmbeddingType {
@@ -83,13 +85,21 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
                         }
                         pb.inc(1);
                     }
-                    "txt" | "md" => {
+                    "txt" | "md"  => {
                         // extract text, but hold off on the HTTP call to batch it later
                         if let Some(text) = crate::extract::extract_text(path).ok() {
                             pending_texts.push(text);
                             pending_paths.push(path);
                         } else {
                             // if extraction fails, still increment progress bar
+                            pb.inc(1);
+                        }
+                    }
+                    "pdf" => {
+                        if let Ok(text) = extract_pdf_text(path){
+                            pending_texts.push(text);
+                            pending_paths.push(path);
+                        } else {
                             pb.inc(1);
                         }
                     }
@@ -141,4 +151,16 @@ pub fn build_index(folder: &Path) -> anyhow::Result<Vec<IndexEntry>> {
         .collect();
 
     index_file_list(&paths)
+}
+
+fn extract_pdf_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
+    let doc = PdfDocument::open(path)?;
+    let mut text = String::new();
+
+    for page_index in 0..doc.page_count().unwrap() {
+            text.push_str(&doc.extract_text(page_index)?);
+            text.push('\n'); // separate pages
+    }
+    
+    Ok(text)
 }
