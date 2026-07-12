@@ -83,7 +83,7 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
                         }
                         pb.inc(1);
                     }
-                    _ => {
+                    "txt" | "md" => {
                         // extract text, but hold off on the HTTP call to batch it later
                         if let Some(text) = crate::extract::extract_text(path).ok() {
                             pending_texts.push(text);
@@ -92,6 +92,9 @@ pub fn index_file_list(paths: &[PathBuf]) -> anyhow::Result<Vec<IndexEntry>> {
                             // if extraction fails, still increment progress bar
                             pb.inc(1);
                         }
+                    }
+                    _ => {
+                        pb.inc(1); // skip unknown files, don't try to do anything with them
                     }
                 }
             }
