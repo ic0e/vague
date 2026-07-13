@@ -120,7 +120,9 @@ vague index /path --overwrite  # Re-index (you'll be prompted)
 - Video support (frame extraction + CLIP embedding per frame)
 - Further optimization of indexing and searching
 
+## Contributing
+
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on opening issues, testing features, and submitting pull requests.
+
 ## License
 This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
-
-> README.md last updated on July 9th 2026.
