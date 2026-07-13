@@ -1,14 +1,14 @@
-# VAGUE • [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.html) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) [![Issues Welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/ic0e/OS-Recon/issues) [![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](https://github.com/ic0e/OS-Recon/graphs/commit-activity)
+# VAGUE • [![License: AGPL v3](https://img.shields.io/badge/license-AGPL_3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0.html) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com) [![Issues Welcome](https://img.shields.io/badge/issues-welcome-brightgreen.svg)](https://github.com/ic0e/vague/issues) [![Maintenance](https://img.shields.io/badge/maintained-yes-brightgreen.svg)](https://github.com/ic0e/vague/graphs/commit-activity)
 
-> A fully local, multimodal semantic search engine. Index a folder of documents *and* images, then search everything by meaning instead of exact keywords or filenames. Text is embedded with a local model, images are embedded with CLIP, both via `fastembed`. Nothing ever leaves your machine.
+> A fully local, multimodal semantic search engine CLI. Index a folder of documents *and* images, then search everything by meaning instead of exact keywords or filenames. Text is embedded with a local model, images are embedded with CLIP, both via `fastembed`. Nothing ever leaves your machine.
 
-[![Rust](https://img.shields.io/badge/Rust-2021-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-2024-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP)
 [![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
 
-`vague` is a multimodal search pipeline. A query like *"that one legal file"* surfaces a tax document even with zero literal word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* can surface a .png the same way, since images are embedded into an actual vector space with CLIP instead of just being tagged with metadata. Text and image results get ranked together in a single list, using normalized 0-1 scores so one modality doesn't drown out the other just because its raw similarity numbers happen to run higher.
+`vague` is a multimodal searching CLI. A query like *"that one legal file"* returns a tax document even with zero literal word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* can return a .png the same way, since images are embedded into a vector space with CLIP instead of being tagged with metadata. Text and image results get ranked together in a single list, they are normalized with values from 0-1, since CLIP & nomic-text-embed don't normalize th e same way.
 
-> !! Early MVP: simple indexing, no CLI arguments for advanced filtering yet.
+> !! Early MVP: the program is still WIP, expect rough edges
 
 ## How it works
 
@@ -17,13 +17,11 @@
 2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
 
 **Images (`.png`, `.jpg`, `.jpeg`, `.webp`)**
-1. Images are embedded directly into vector space using **CLIP**, run locally via [`fastembed`](https://github.com/Anush008/fastembed-rs) (Rust bindings over ONNX Runtime). No captioning step, no LLM in the loop — the image itself becomes a vector.
+1. Images are embedded directly into vector space using **CLIP**, run locally via [`fastembed`](https://github.com/Anush008/fastembed-rs) (Rust bindings over ONNX Runtime).
 2. Search queries are embedded through CLIP's own text encoder to land in the same space as the image vectors.
 
 **Merged ranking**
-Text and image results come from two different embedding spaces that aren't directly comparable on raw cosine score, so each result set is normalized to a 0-1 scale before being combined into a single ranked list — meaning a strong image match and a strong text match can both surface near the top, instead of one modality silently dominating the other because its raw scores happen to run higher.
-
-No API calls, no cloud services, no data leaving the machine. The only network activity is the one time model downloads from fastembed.
+Text and image results come from two different embedding spaces that aren't directly comparable on raw cosine score, so each result set is normalized to a 0-1 scale before being combined into a single list, meaning a strong image match and a strong text match both appear at the top (without one falling out).
 
 ## Current Project Layout
 ```
@@ -76,7 +74,7 @@ Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that fold
 
 ## Requirements for development
 
-- [Rust](https://www.rust-lang.org/) (2021 edition)
+- [Rust](https://www.rust-lang.org/) (2024 edition)
 - **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
   - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++"** workload selected.
   - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
