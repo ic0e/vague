@@ -37,33 +37,6 @@ vague/
 │   └── store.rs        # normalized similarity scoring and merged ranked search
 ```
 
-## Requirements
-
-- [Rust](https://www.rust-lang.org/) (2021 edition)
-- **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
-  - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++"** workload selected.
-  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-  - **Linux**: `build-essential` (or your distro's equivalent, e.g. `sudo apt install build-essential`)
-
-## Installation
-
-**From source:**
-```bash
-git clone https://github.com/ic0e/vague.git
-cd vague
-cargo install --path .
-```
-
-## Setup
-
-Before using `vague`, pull the text embedding model and download the CLIP models:
-
-```bash
-vague setup
-```
-
-`vague setup` downloads CLIP's image and text models into `~/.vague_cache` on first run. This only needs to happen once - afterward, `index` and `search` start instantly. (NOTE: when running `vague search` or `vague index`, the program will automatically download the needed model.)
-
 ## Installation
 
 ### Windows
@@ -101,6 +74,14 @@ To check your current version: `vague --version`
 ### Uninstall
 Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that folder from your PATH environment variable.
 
+## Requirements for development
+
+- [Rust](https://www.rust-lang.org/) (2021 edition)
+- **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
+  - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++"** workload selected.
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Linux**: `build-essential` (or your distro's equivalent, e.g. `sudo apt install build-essential`)
+
 ## Development
 
 To build and run from source:
@@ -110,6 +91,28 @@ cd vague
 cargo build --release
 cargo run -- index <folder>
 cargo run -- search "<query>"
+```
+
+## Usage
+
+**First time:** Index your files
+```bash
+vague index /path/to/your/files
+```
+This generates embeddings and creates a searchable index. Models download automatically to `~/.vague_cache` on first run (a few hundred MB, one time only).
+
+**Then:** Search for text or images
+```bash
+vague search "find pictures of cats"
+vague search "todo lists"
+```
+
+Results are ranked by relevance (both text and image matches in one output).
+
+**Manage your index:**
+```bash
+vague clear              # Delete the current index
+vague index /path --overwrite  # Re-index (you'll be prompted)
 ```
 
 ## Roadmap & Future Features
