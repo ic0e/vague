@@ -64,31 +64,42 @@ vague setup
 
 `vague setup` downloads CLIP's image and text models into `~/.vague_cache` on first run. This only needs to happen once - afterward, `index` and `search` start instantly. (NOTE: when running `vague search` or `vague index`, the program will automatically download the needed model.)
 
-## Usage
+## Installation
 
-Once set up, `vague` works as a global command from any directory.
+### Windows
+1. Download `vague.exe` from [Releases](https://github.com/ic0e/vague/releases)
+2. Create a folder like `C:\tools` and put `vague.exe` there
+3. Add `C:\tools` to your PATH (if you want to use this from any directory:)
+   - Open Settings → search "environment variables" → "Edit the system environment variables"
+   - Click "Environment Variables" → under "User variables" click "New"
+   - Variable name: `PATH`
+   - Variable value: `C:\tools`
+   - Click OK, restart your terminal
+4. Run `vague --help` from any terminal
 
-Basic syntax:
+### Linux/macOS
+1. Download `vague` from [Releases](https://github.com/ic0e/vague/releases)
+2. Move it to your PATH:
 ```bash
-vague index <folder>
-vague search "<query>"
-vague search "<query>" --limit <num>
+   sudo mv vague /usr/local/bin/
+   chmod +x /usr/local/bin/vague
+```
+3. Run `vague --help` from anywhere
+
+### From Source (requires Rust + C++ dev tools 2022)
+```bash
+git clone https://github.com/ic0e/vague
+cd vague
+cargo install --path .
 ```
 
-Examples:
-```bash
-vague index testdata
-vague search "that one legal file"
-vague search "a cute dog sitting on grass"
-vague search "dog sitting on grass" --limit 6
-```
+### Updating
+Download the latest `vague.exe` from [Releases](https://github.com/ic0e/vague/releases) and replace the old one in your PATH folder (e.g., `C:\tools`).
 
-For full command reference:
-```bash
-vague --help
-vague index --help
-vague search --help
-```
+To check your current version: `vague --version`
+
+### Uninstall
+Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that folder from your PATH environment variable.
 
 ## Development
 
