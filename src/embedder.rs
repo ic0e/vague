@@ -4,6 +4,7 @@ thread_local! {
     static TLS_TEXT_MODEL: std::cell::RefCell<Option<TextEmbedding>> = std::cell::RefCell::new(None);
 }
 
+/// Embeds a batch of text files into vectors.
 pub fn embed_text_batch(texts: &[String], cache_dir: std::path::PathBuf) -> anyhow::Result<Vec<Vec<f32>>> {
     TLS_TEXT_MODEL.with(|cell| {
         let mut borrow = cell.borrow_mut();

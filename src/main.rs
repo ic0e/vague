@@ -238,7 +238,7 @@ fn main() -> anyhow::Result<()> {
             let text_query = text_query_batch
                 .into_iter()
                 .next()
-                .ok_or_else(|| anyhow::anyhow!("Ollama returned an empty embedding batch for the search query"))?;
+                .ok_or_else(|| anyhow::anyhow!("Embedder returned an empty embedding batch for the search query"))?;
 
             let results = store::search(&entries, &clip_query, &text_query, limit);
 

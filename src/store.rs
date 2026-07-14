@@ -1,5 +1,6 @@
 use crate::indexer::{IndexEntry, EmbeddingType};
 
+/// Calculates the dot product of a vector, needed for similarity checking.
 fn dot_product(a: &[f32], b: &[f32]) -> f32 {
     let mut sum = 0.0;
     for i in 0..a.len() {
@@ -8,6 +9,7 @@ fn dot_product(a: &[f32], b: &[f32]) -> f32 {
     sum
 }
 
+/// Calculates the magnitude of a vector, needed for similarity checking.
 fn magnitude(v: &[f32]) -> f32 {
     let mut sum = 0.0;
     for x in v {
@@ -16,6 +18,7 @@ fn magnitude(v: &[f32]) -> f32 {
     sum.sqrt()
 }
 
+/// Calculates the similarity between 2 vectors.
 pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     let dot = dot_product(a, b);
     let mag_a = magnitude(a);
@@ -23,10 +26,10 @@ pub fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     dot / (mag_a * mag_b)
 }
 
-/// Score each modality independently, min-max normalize within each group
+/// Score each modality independently, min max normalize within each group
 /// so their raw similarity scales don't dominate each other, then merge
-/// and rank together. This prevents CLIP's naturally lower cross-modal
-/// scores from always being buried under nomic's higher text-text scores.
+/// and rank together. This prevents CLIP's naturally lower scores
+/// from always being buried under nomic's higher scores.
 pub fn search<'a>(
     entries: &'a [IndexEntry],
     clip_query: &[f32],
@@ -81,12 +84,14 @@ fn normalize_scores(scored: &mut Vec<(&IndexEntry, f32)>) {
 
 use std::fs;
 
+/// Saves the index to the database folder.
 pub fn save_index(entries: &[IndexEntry], path: &str) -> anyhow::Result<()> {
     let json = serde_json::to_string(entries)?;
     fs::write(path, json)?;
     Ok(())
 }
 
+/// Loads the saved index into the program.
 pub fn load_index(path: &str) -> anyhow::Result<Vec<IndexEntry>> {
     let json = fs::read_to_string(path)?;
     let entries: Vec<IndexEntry> = serde_json::from_str(&json)?;

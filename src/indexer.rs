@@ -4,8 +4,6 @@ use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::{Path, PathBuf};
-use pdf_oxide::PdfDocument;
-use std::error::Error;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
@@ -99,7 +97,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result
                         }
                     }
                     "pdf" => {
-                        if let Ok(text) = extract_pdf_text(path){
+                        if let Ok(text) = crate::extract::extract_pdf_text(path){
                             pending_texts.push(text);
                             pending_paths.push(path);
                         } else {
@@ -157,16 +155,4 @@ pub fn build_index(folder: &Path) -> anyhow::Result<Vec<IndexEntry>> {
     let mut skipped: usize = 0;
 
     index_file_list(&paths, &mut skipped)
-}
-
-fn extract_pdf_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
-    let doc = PdfDocument::open(path)?;
-    let mut text = String::new();
-
-    for page_index in 0..doc.page_count().unwrap() {
-            text.push_str(&doc.extract_text(page_index)?);
-            text.push('\n'); // separate pages
-    }
-    
-    Ok(text)
 }
