@@ -9,7 +9,7 @@
 ### Windows
 1. Create a folder for vague like `C:\tools`
 2. Download `vague.exe` from [Releases](https://github.com/ic0e/vague/releases) & put it in your folder (`C:/tools`)
-3. Add `C:\tools` to your PATH (if you want to use this from any directory:)
+3. Add `C:\tools` to your PATH (if you want to use vague from any directory:)
    - Open Settings -> search "environment variables" -> "Edit the system environment variables"
    - Click "Environment Variables" -> under "User variables" click "New"
    - Variable name: `PATH`
@@ -18,7 +18,7 @@
 4. Run `vague --help` from any terminal
 
 ### Linux/macOS
-1. Download `vague` from [Releases](https://github.com/ic0e/vague/releases)
+1. Download `vague.exe` from [Releases](https://github.com/ic0e/vague/releases)
 2. Move it to your PATH:
 ```bash
    sudo mv vague /usr/local/bin/
@@ -44,7 +44,7 @@ Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that fold
 - [Rust](https://www.rust-lang.org/) (2024 edition)
 - **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
   - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++ 2022"** workload selected. (make sure version is 2022)
-  - **MacOS**: Xcode Command Line Tools (`xcode-select --install`, etc.)
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`, etc.)
   - **Linux**: install build-essential (depends on distro, `sudo apt install build-essential`, etc.)
 
 ## Development
@@ -80,7 +80,7 @@ vague clear              # Delete the current index
 vague index /path --overwrite  # Re-index (you'll be prompted)
 ```
 
-## How the engine works
+## Search Features
 
 **Text (.txt, .md, ...)**
 1. File content is extracted and sent to a local text embedding model (nomic-embed-text) to produce a vector embedding.
@@ -103,6 +103,7 @@ vague/
 ```
 
 ## Roadmap & Future Features
+- Add showcase gifs in README
 - Docx support
 - Video support (frame extraction + CLIP embedding per frame)
 - Further optimization of indexing and searching
