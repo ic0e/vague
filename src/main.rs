@@ -136,8 +136,8 @@ fn main() -> anyhow::Result<()> {
                     .collect();
 
                 // split existing entries into:
-                //    - entries belonging to OTHER folders (always kept)
-                //    - entries belonging to THIS folder (pruned if file deleted)
+                // - entries belonging to OTHER folders (always kept)
+                // - entries belonging to THIS folder (pruned if file deleted)
                 let (in_folder, outside_folder): (Vec<_>, Vec<_>) =
                     existing.into_iter().partition(|e| {
                         if let Ok(canon_entry) = std::fs::canonicalize(&e.path) {
