@@ -126,7 +126,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                     for (i, vector) in vectors.into_iter().enumerate() {
                         let path = pending_paths[i];
                         let text = std::mem::take(&mut pending_texts[i]);
-                        let text = text.chars().take(50).collect(); // save only the first 50 symbols of the txt file in the index file
+                        let text = text.chars().take(500).collect(); // save only the first 500 symbols, edited this due to OCR addition
                         
                         chunk_entries.push(IndexEntry {
                             path: path.to_string_lossy().to_string(),

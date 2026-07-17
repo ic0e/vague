@@ -34,6 +34,7 @@ pub fn search<'a>(
     entries: &'a [IndexEntry],
     clip_query: &[f32],
     text_query: &[f32],
+    raw_query_str: &str,
     top_n: usize,
 ) -> Vec<(&'a IndexEntry, f32)> {
     // Score each entry against its own embedding space.
@@ -55,6 +56,12 @@ pub fn search<'a>(
     normalize_scores(&mut clip_scored);
     normalize_scores(&mut text_scored);
 
+    let lower_query = raw_query_str.to_lowercase();
+        for (entry, score) in clip_scored.iter_mut() {
+            if entry.text.to_lowercase().contains(&lower_query) {
+                *score += 0.3; // gives the result a boos since there is an exact match in the text
+            }
+        }
     // Merge both groups and rank together.
     let mut combined: Vec<(&IndexEntry, f32)> = clip_scored
         .into_iter()

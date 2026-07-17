@@ -243,7 +243,7 @@ fn main() -> anyhow::Result<()> {
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("Embedder returned an empty embedding batch for the search query"))?;
 
-            let results = store::search(&entries, &clip_query, &text_query, limit);
+            let results = store::search(&entries, &clip_query, &text_query, &query, limit);
 
             spinner.finish_and_clear();
 
