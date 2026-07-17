@@ -38,6 +38,9 @@ enum Commands {
         /// You will be asked to confirm before anything is deleted.
         #[arg(long)]
         overwrite: bool,
+
+        #[arg(long)]
+        ocr: bool,
     },
 
     /// Searches your indexed files using a natural language query
@@ -86,7 +89,7 @@ fn main() -> anyhow::Result<()> {
             println!("{}", "Index cleared.".green().bold());
         }
 
-        Commands::Index { folder, overwrite } => {
+        Commands::Index { folder, overwrite, ocr } => {
             if overwrite {
                 // warn and ask for confirmation before nuking the index
                 println!("{}", "WARNING: --overwrite will discard the entire existing index and replace it with this folder only.".yellow().bold());
@@ -100,7 +103,7 @@ fn main() -> anyhow::Result<()> {
                     return Ok(());
                 }
 
-                let entries = indexer::build_index(Path::new(&folder))?;
+                let entries = indexer::build_index(Path::new(&folder), ocr)?;
                 store::save_index(&entries, db_path.to_str().unwrap())?;
                 println!("Indexed {} successfully (overwrote previous index).", folder);
             } else {
@@ -189,7 +192,7 @@ fn main() -> anyhow::Result<()> {
                 let new_entries = if new_paths.is_empty() {
                     vec![]
                 } else {
-                    indexer::index_file_list(&new_paths, &mut skipped)?
+                    indexer::index_file_list(&new_paths, &mut skipped, ocr)?
                 };
 
                 // merge: other folders + surviving in-folder entries + newly embedded

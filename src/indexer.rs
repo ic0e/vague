@@ -22,7 +22,7 @@ pub struct IndexEntry {
 
 /// Embeds a specific list of file paths and returns their index entries.
 /// Used for both full indexing and incremental (new-files-only) indexing.
-pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result<Vec<IndexEntry>> {
+pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> anyhow::Result<Vec<IndexEntry>> {
     let cache_dir = dirs::home_dir()
         .map(|p| p.join(".vague_cache"))
         .unwrap_or_else(|| PathBuf::from(".fastembed_cache"));
@@ -58,6 +58,15 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result
 
                 match extension.as_str() {
                     "png" | "jpg" | "jpeg" | "webp" | "bmp" => {
+                        let mut stored_text = filename.to_string();
+                        if ocr {
+                            if let Ok(extracted) = crate::extract::extract_image_text(path) {
+                                if !extracted.trim().is_empty() {
+                                    stored_text = extracted;
+                                }
+                            }
+                        }
+                        
                         // call the thread block and save the result to vector_res 
                         let vector_res = TLS_IMAGE_MODEL.with(|cell| {
                             let mut borrow = cell.borrow_mut();
@@ -78,7 +87,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result
                         if let Some(vector) = vector_res {
                                 chunk_entries.push(IndexEntry {
                                 path: path.to_string_lossy().to_string(),
-                                text: filename.to_string(),
+                                text: stored_text,
                                 vector,
                                 embedding_type: EmbeddingType::Clip,
                             });
@@ -145,7 +154,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize) -> anyhow::Result
 
 /// Indexes all files under `folder` from scratch.
 /// Used by `--overwrite` mode.
-pub fn build_index(folder: &Path) -> anyhow::Result<Vec<IndexEntry>> {
+pub fn build_index(folder: &Path, ocr: bool) -> anyhow::Result<Vec<IndexEntry>> {
     let paths: Vec<PathBuf> = WalkDir::new(folder)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -155,5 +164,5 @@ pub fn build_index(folder: &Path) -> anyhow::Result<Vec<IndexEntry>> {
     
     let mut skipped: usize = 0;
 
-    index_file_list(&paths, &mut skipped)
+    index_file_list(&paths, &mut skipped, ocr)
 }
