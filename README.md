@@ -1,8 +1,40 @@
 # VAGUE • [![Rust](https://img.shields.io/badge/Rust-2024-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/) [![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP) [![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
 
-**vague** is a local semantic search CLI engine. A query like *"that one legal file"* returns a tax document even with zero word overlap, because it compares meaning instead of matching text. A query like *"screenshot of an error message"* returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with metadata. Text and image results get ranked together in a single list, they are normalized with values from 0-1, since CLIP & nomic-text-embed don't normalize the same way.
+**vague** is a local semantic search CLI engine. Searches match meaning instead of just text. A query like *'that one legal file'* returns a tax document even with zero word overlap. A query like *"screenshot of an error message"* returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with metadata. Text and image results get ranked together in a single list, they are normalized with values from 0-1, since CLIP & nomic-text-embed don't normalize the same way.
 
 > *!! Early MVP:* the program is still WIP, expect rough edges
+
+## Search Features
+
+**Text (.txt, .md, .pdf ...)**
+1. File content is extracted and sent to a local text embedding model (nomic-embed-text) to produce a vector embedding.
+2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
+```bash
+vague index folder
+vague search search "cat" --limit 1
+[1.0000] \\?\D:\folder\animals.txt
+```
+*use cases: finding specific documents and text files that have bad names, just by searching the context*
+
+**Images (.png, .jpg, .jpeg, .webp)**
+1. Images are embedded directly into vector space using **CLIP**, run locally via [fastembed](https://github.com/Anush008/fastembed-rs) (Rust bindings over ONNX Runtime).
+2. Search queries are embedded through CLIP's own text encoder to land in the same space as the image vectors.
+```bash
+vague index folder
+vague search search "cat picture" --limit 1
+[1.0000] \\?\D:\folder\cute_animals.png
+```
+*use cases: finding a specific picture from just a description, looking through random screenshots with no text*
+
+**OCR text detection in images (.png, .jpg, .jpeg, .webp)**
+1. The optional `--ocr` flag extracts readable text from images during indexing.
+2. Extracted text is indexed alongside image vectors, so searches match words inside screenshots or diagrams.
+```bash
+vague index folder
+vague search search "tower-http" --ocr --limit 1
+[1.3000] \\?\D:\folder\screenshot.png
+```
+*use cases: finding screenshots containing specific text, locating diagrams with labeled components*
 
 ## Installation
 
@@ -79,16 +111,6 @@ Results are ranked by relevance (both text and image matches in one output).
 vague clear              # Delete the current index
 vague index /path --overwrite  # Re-index (you'll be prompted)
 ```
-
-## Search Features
-
-**Text (.txt, .md, ...)**
-1. File content is extracted and sent to a local text embedding model (nomic-embed-text) to produce a vector embedding.
-2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
-
-**Images (.png, .jpg, .jpeg, .webp)**
-1. Images are embedded directly into vector space using **CLIP**, run locally via [fastembed](https://github.com/Anush008/fastembed-rs) (Rust bindings over ONNX Runtime).
-2. Search queries are embedded through CLIP's own text encoder to land in the same space as the image vectors.
 
 ## Project Layout For Devs
 ```
