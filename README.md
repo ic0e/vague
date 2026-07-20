@@ -29,10 +29,11 @@ vague search search "cat picture" --limit 1
 **OCR text detection in images (.png, .jpg, .jpeg, .webp)**
 1. The optional `--ocr` flag extracts readable text from images during indexing.
 2. Extracted text is indexed alongside image vectors, so searches match words inside screenshots or diagrams.
+*NOTE: Indexing with --ocr adds about ~0.4 seconds per image. Only use this if you need to search for text inside screenshots or diagrams.*
 ```bash
 vague index folder
 vague search search "tower-http" --ocr --limit 1
-[1.3000] \\?\D:\folder\screenshot.png
+[1.3000] \\?\D:\folder\screenshot-logs.png
 ```
 *use cases: finding screenshots containing specific text, locating diagrams with labeled components*
 
@@ -79,17 +80,6 @@ Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that fold
   - **macOS**: Xcode Command Line Tools (`xcode-select --install`, etc.)
   - **Linux**: install build-essential (depends on distro, `sudo apt install build-essential`, etc.)
 
-## Development
-
-To build and run from source:
-```bash
-git clone https://github.com/ic0e/vague.git
-cd vague
-cargo build --release
-cargo run -- index <folder>
-cargo run -- search "<query>"
-```
-
 ## Usage
 
 **First time:** Index your files
@@ -111,6 +101,25 @@ Results are ranked by relevance (both text and image matches in one output).
 vague clear              # Delete the current index
 vague index /path --overwrite  # Re-index (you'll be prompted)
 ```
+
+## Development
+
+To build and run from source:
+```bash
+git clone https://github.com/ic0e/vague.git
+cd vague
+cargo build --release
+cargo run -- index <folder>
+cargo run -- search "<query>"
+```
+
+### OCR Support (for development)
+OCR requires the detection and recognition models. To test OCR locally:
+
+1. Place `text-detection.rten` and `text-recognition.rten` in `target/release/models/`
+2. Run with `--release` only: `cargo run --release -- index <folder> --ocr`
+
+OCR will not work in debug builds or without models present ATM.
 
 ## Project Layout For Devs
 ```
