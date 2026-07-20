@@ -59,7 +59,7 @@ pub fn search<'a>(
     let lower_query = raw_query_str.to_lowercase();
         for (entry, score) in clip_scored.iter_mut() {
             if entry.text.to_lowercase().contains(&lower_query) {
-                *score += 0.3; // gives the result a boos since there is an exact match in the text
+                *score += 0.3; // gives the result a boost since there is an exact match in the text
             }
         }
     // Merge both groups and rank together.

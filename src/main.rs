@@ -9,6 +9,7 @@ mod extract;
 mod indexer;
 mod store;
 mod clip;
+mod ocr;
 
 /// Vague: A local semantic search engine
 /// 

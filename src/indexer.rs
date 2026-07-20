@@ -2,9 +2,11 @@ use walkdir::WalkDir;
 use serde::{Serialize, Deserialize};
 use rayon::prelude::*;
 use fastembed::{ImageEmbedding, ImageInitOptions, ImageEmbeddingModel};
+use ocrs::{OcrEngine, ImageSource};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub enum EmbeddingType {
@@ -32,6 +34,11 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
     thread_local! {
         static TLS_IMAGE_MODEL: std::cell::RefCell<Option<ImageEmbedding>> = std::cell::RefCell::new(None);
     }
+    thread_local! {
+        static TLS_OCR_ENGINE: std::cell::RefCell<Option<OcrEngine>> = {
+            std::cell::RefCell::new(None)
+        };
+    }
 
     let skipped_atomic = Arc::new(AtomicUsize::new(0));
 
@@ -42,14 +49,16 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
             .expect("static template should compile")
             .progress_chars("#>-")
     );
-
-    let result: Vec<IndexEntry> = paths
+    
+    let mut result: Vec<IndexEntry> = paths
         .par_chunks(32) // process 32 files at a time per thread to optimize network batching
         .flat_map(|chunk| {
             let skipped = skipped_atomic.clone();
             let mut chunk_entries = Vec::new();
             let mut pending_texts = Vec::new();
             let mut pending_paths = Vec::new();
+            let mut pending_images = Vec::new();
+
 
             for path in chunk {
                 let extension = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
@@ -58,14 +67,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
 
                 match extension.as_str() {
                     "png" | "jpg" | "jpeg" | "webp" | "bmp" => {
-                        let mut stored_text = filename.to_string();
-                        if ocr {
-                            if let Ok(extracted) = crate::extract::extract_image_text(path) {
-                                if !extracted.trim().is_empty() {
-                                    stored_text = extracted;
-                                }
-                            }
-                        }
+                        let stored_text = filename.to_string();
                         
                         // call the thread block and save the result to vector_res 
                         let vector_res = TLS_IMAGE_MODEL.with(|cell| {
@@ -91,6 +93,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                                 vector,
                                 embedding_type: EmbeddingType::Clip,
                             });
+                            pending_images.push(chunk_entries.len() - 1);
                         }
                         pb.inc(1);
                     }
@@ -145,6 +148,53 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
             chunk_entries
         })
         .collect();
+    
+    if ocr {
+        pb.set_message("Running OCR on images...");
+
+        let image_entries: Vec<(usize, String)> = result
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| e.embedding_type == EmbeddingType::Clip)
+            .map(|(i, e)| (i, e.path.clone()))
+            .collect();
+
+        let ocr_results: Vec<(usize, Option<String>)> = std::thread::spawn(move || {
+            let engine = match crate::ocr::init_global_ocr() {
+                Ok(e) => e,
+                Err(err) => {
+                    eprintln!("OCR engine init failed: {err}");
+                    return vec![];
+                }
+            };
+
+            image_entries
+                .into_iter()
+                .map(|(idx, path_str)| {
+                    let path = Path::new(&path_str);
+                    let text = (|| {
+                        let img = image::open(path).ok()?;
+                        let rgba = img.to_rgba8();
+                        let img_source = ImageSource::from_bytes(rgba.as_raw(), rgba.dimensions()).ok()?;
+                        let ocr_input = engine.prepare_input(img_source).ok()?;
+                        let text = engine.get_text(&ocr_input).ok()?;
+                        Some(text)
+                    })();
+                    (idx, text)
+                })
+                .collect()
+        })
+        .join()
+        .expect("OCR thread panicked");
+
+        for (idx, text_opt) in ocr_results {
+            if let Some(text) = text_opt {
+                if !text.is_empty() {
+                    result[idx].text = text;
+                }
+            }
+        }
+    }
 
     pb.finish_with_message("Done!");
 
