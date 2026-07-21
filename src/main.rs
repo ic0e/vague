@@ -30,6 +30,7 @@ enum Commands {
     /// By default this is additive: existing indexed folders are preserved,
     /// deleted files are pruned, and only new files are embedded.
     /// Use --overwrite to replace the entire index with this folder only.
+    /// Use --ocr to extract text from images to make image searching more accurate.
     #[command(arg_required_else_help = true)]
     Index {
         /// The path to the target folder you want to index
