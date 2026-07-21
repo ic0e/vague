@@ -58,7 +58,17 @@ enum Commands {
         #[arg(short, long)]
         limit: Option<usize>,
     },
+    
+    #[command(arg_required_else_help = true)]
+    /// Changes an application setting in settings.toml
+    Settings{
+        /// The name of the setting to change (e.g., "limit")
+        setting_name: String,
 
+        /// The new value of the setting (e.g., "10")
+        setting_value: String,
+    },
+    
     /// Clears the entire search index. All indexed folders will need to be re-indexed.
     Clear,
 
@@ -344,6 +354,29 @@ fn main() -> anyhow::Result<()> {
             println!("\n{}", "Setup complete! Models cached at:".bold());
             println!("  {}", cache_dir.display().to_string().white());
             println!("{}", "\nYou can now run 'vague index <folder>' and 'vague search <query>' instantly.".dimmed());
+        }
+
+        Commands::Settings { setting_name, setting_value }=> {
+            {
+                let check: i32 = setting_value.parse().unwrap();
+                if check <= 0 {
+                    panic!("Value must be above 0!");
+                }
+            }
+            
+            let content = std::fs::read_to_string(&settings_path).expect("Settings file not found! Please try again.");
+
+            let mut table: toml::Table = content.parse()?;
+
+            let value = match setting_value.parse::<i64>() {
+                    Ok(num) => toml::Value::Integer(num),
+                    Err(_) => toml::Value::String(setting_value.clone()),
+                };
+            
+                table.insert(setting_name.clone(), value);
+            
+                std::fs::write(&settings_path, toml::to_string_pretty(&table)?)?;
+                println!("Updated {} = {}", setting_name, setting_value);
         }
     }
 
