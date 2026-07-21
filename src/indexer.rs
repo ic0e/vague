@@ -98,7 +98,6 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                         pb.inc(1);
                     }
                     "txt" | "md"  => {
-                        // extract text, but hold off on the HTTP call to batch it later
                         if let Some(text) = crate::extract::extract_text(path).ok() {
                             pending_texts.push(text);
                             pending_paths.push(path);
@@ -122,7 +121,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                 }
             }
 
-            // send all text files collected from this chunk to ollama in one batch request
+            // send all text files collected from this chunk for the embedding model
             if !pending_texts.is_empty() {
                 if let Some(vectors) = crate::embedder::embed_text_batch(&pending_texts, cache_dir.clone()).ok() {
                     // match the returned vectors back up to their corresponding files

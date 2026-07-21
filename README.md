@@ -72,14 +72,6 @@ Download the latest `vague.exe` from [Releases](https://github.com/ic0e/vague/re
 ### Uninstall
 Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that folder from your PATH environment variable.
 
-## Requirements for development
-
-- [Rust](https://www.rust-lang.org/) (2024 edition)
-- **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
-  - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++ 2022"** workload selected. (make sure version is 2022)
-  - **macOS**: Xcode Command Line Tools (`xcode-select --install`, etc.)
-  - **Linux**: install build-essential (depends on distro, `sudo apt install build-essential`, etc.)
-
 ## Usage
 
 **First time:** Index your files
@@ -102,6 +94,14 @@ vague clear              # Delete the current index
 vague index /path --overwrite  # Re-index (you'll be prompted)
 ```
 
+## Requirements for development
+
+- [Rust](https://www.rust-lang.org/) (2024 edition)
+- **A C++ build toolchain** — `fastembed`'s ONNX Runtime bindings need to compile/link against C++ tooling.
+  - **Windows**: install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) with the **"Desktop development with C++ 2022"** workload selected. (make sure version is 2022)
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`, etc.)
+  - **Linux**: install build-essential (depends on distro, `sudo apt install build-essential`, etc.)
+
 ## Development
 
 To build and run from source:
@@ -119,7 +119,7 @@ OCR requires the detection and recognition models. To test OCR locally:
 1. Place `text-detection.rten` and `text-recognition.rten` in `target/release/models/`
 2. Run with `--release` only: `cargo run --release -- index <folder> --ocr`
 
-OCR will not work in debug builds or without models present ATM.
+OCR only works in **release mode**, debug builds makes it extremely slow due to [ocrs (docs)](https://docs.rs/crate/ocrs/latest).
 
 ## Project Layout For Devs
 ```

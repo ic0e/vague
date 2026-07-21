@@ -3,6 +3,7 @@ use rten::Model;
 use std::env;
 use std::fs;
 
+/// Initiates the OCR model for global use.
 pub fn init_global_ocr() -> anyhow::Result<OcrEngine> {
     let exe_path = env::current_exe()
         .expect("Failed to get executable path")
