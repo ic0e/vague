@@ -9,6 +9,7 @@ anyhow = "1"
 walkdir = "2"
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
+config = { version = "0.15.25", features = ["toml"] }
 fastembed = "5"
 rayon = "1.12"
 indicatif = "0.18.6"
@@ -18,3 +19,4 @@ pdf_oxide = "0.3"
 ocrs = "0.12.2"
 rten = "0.24.0"
 image = "0.25"
+toml = "1.1.3"

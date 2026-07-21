@@ -1,8 +1,10 @@
 use std::path::Path;
 use std::collections::HashSet;
+use std::io::Write;
 use clap::{Parser, Subcommand};
 use colored::*;
 use walkdir::WalkDir;
+
 
 mod embedder;
 mod extract;
@@ -53,8 +55,8 @@ enum Commands {
 
         /// Optional: Number of results to return (default is 5)
         /// use --limit <num> or -l <num> 
-        #[arg(short, long, default_value_t = 5)]
-        limit: usize,
+        #[arg(short, long)]
+        limit: Option<usize>,
     },
 
     /// Clears the entire search index. All indexed folders will need to be re-indexed.
@@ -66,6 +68,33 @@ enum Commands {
 }
 
 fn main() -> anyhow::Result<()> {
+    let mut limit_settings: u32 = 5;
+
+    let path = std::env::current_exe()
+        .expect("Failed to get executable path")
+        .parent()
+        .expect("Failed to get parent directory")
+        .to_path_buf();
+    let settings_path = path.join("settings.toml");
+
+    match settings_path.try_exists() {
+        Ok(true) => {
+            let config: toml::Value = toml::from_str(&std::fs::read_to_string(&settings_path)?)?;
+            if let Some(val) = config.get("limit").and_then(|v| v.as_integer()) {
+                limit_settings = val as u32;
+            }
+        }
+        Ok(false) => {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true) 
+                .open(&settings_path)?;
+
+            file.write_all(b"limit = 5\n")?;
+        }
+        Err(e) => eprintln!("Error checking the settings file: {e}")
+    }
+    
     let cli = Cli::parse();
 
     // set up a unified, global database directory (e.g., C:\Users\User\.vague_cache\)
@@ -215,6 +244,8 @@ fn main() -> anyhow::Result<()> {
         }
 
         Commands::Search { query, limit } => {
+            let limit = limit.unwrap_or(limit_settings as usize);
+            
             let spinner = indicatif::ProgressBar::new_spinner();
             let _ = spinner.set_style(
                 indicatif::ProgressStyle::default_spinner()
