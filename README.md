@@ -1,6 +1,6 @@
 # VAGUE • [![Rust](https://img.shields.io/badge/Rust-2024-000000?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/) [![CLIP](https://img.shields.io/badge/CLIP-Image_Embeddings-000000?style=flat-square)](https://github.com/openai/CLIP) [![fastembed](https://img.shields.io/badge/fastembed-ONNX_Runtime-000000?style=flat-square)](https://github.com/Anush008/fastembed-rs)
 
-**vague** is a local semantic search CLI engine. Searches match meaning instead of just text. A query like *'that one legal file'* returns a tax document even with zero word overlap. A query like *"screenshot of an error message"* returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with metadata. Text and image results get ranked together in a single list, they are normalized with values from 0-1, since CLIP & nomic-text-embed don't normalize the same way.
+**vague** is a local semantic search CLI engine. Searches match meaning instead of just text. A query like "that one legal file" returns a tax document even with zero word overlap. A query like "screenshot of an error message" returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with just metadata. Text and image results are ranked together in a single list.
 
 > *!! Early MVP:* the program is still WIP, expect rough edges
 
@@ -21,7 +21,7 @@ vague search search "cat" --limit 1
 2. Search queries are embedded through CLIP's own text encoder to land in the same space as the image vectors.
 ```bash
 vague index folder
-vague search search "cat picture" --limit 1
+vague search "cat picture" --limit 1
 [1.0000] \\?\D:\folder\cute_animals.png
 ```
 *use cases: finding a specific picture from just a description, looking through random screenshots with no text*
@@ -31,8 +31,8 @@ vague search search "cat picture" --limit 1
 2. Extracted text is indexed alongside image vectors, so searches match words inside screenshots or diagrams.
 *NOTE: Indexing with --ocr adds about ~0.4 seconds per image. Only use this if you need to search for text inside screenshots or diagrams.*
 ```bash
-vague index folder
-vague search search "tower-http" --ocr --limit 1
+vague index folder --ocr
+vague search "tower-http" --limit 1
 [1.3000] \\?\D:\folder\screenshot-logs.png
 ```
 *use cases: finding screenshots containing specific text, locating diagrams with labeled components*
@@ -77,25 +77,100 @@ Delete `vague.exe` from your PATH folder (e.g., `C:\tools`) and remove that fold
 
 ## Usage
 
-**First time:** Index your files
+### Setup & Basics
+
+These are the first commands to run after installing vague.
+
+```bash
+vague --version   # prints the current version of vague
+vague --help      # prints the current commands and their subcommands
+vague setup       # downloads the text and image embedding models used for indexing
+```
+
+Running vague for the first time creates a settings file. Current settings:
+
+* limit - how many results search returns
+
+To change a setting:
+
+```bash
+vague settings <setting> <value>
+```
+
+Example:
+
+```bash
+vague settings limit 10   # search now returns 10 results instead of the default 5
+```
+
+### Indexing
+
+Files need to be indexed before they can be searched.
+
 ```bash
 vague index /path/to/your/files
 ```
+
 This generates embeddings and creates a searchable index. Models download automatically to `~/.vague_cache` on first run (a few hundred MB, one time only).
 
-**Then:** Search for text or images
+Examples:
+
+```bash
+vague index .                       # indexes the cwd
+cd pictures
+vague index screenshots             # indexes a folder called screenshots
+vague index screenshots/important   # indexes only that subfolder, not the rest of screenshots
+```
+
+Indexing can also run with OCR enabled, which extracts and saves text from images so it becomes searchable. This is slower than a normal index, so it's best used only on folders where the image text actually matters.
+
+```bash
+vague index <folder> --ocr
+```
+
+If you index without OCR first and want to add it later, you can run OCR separately afterward:
+
+```bash
+vague index <folder>
+vague index <folder> --ocr   # only runs OCR on unindexed images, doesn't re-index existing files
+```
+
+Re-running index on a folder only picks up new files, it won't re-index files that are already in the index:
+
+```bash
+vague index .                 # indexes current folder
+echo "text" > filename.txt    # adds a new file to the folder
+vague index .                 # only indexes filename.txt, everything else isn't re-indexed
+```
+
+If existing files have changed and are no longer showing up correctly in search, the index needs to be overwritten instead. There are two ways to do this:
+
+```bash
+vague clear             # clears the entire index
+vague index <folder>    # re-indexes from scratch
+```
+
+or in one step:
+
+```bash
+vague index . --overwrite   # clears and re-indexes in place, prompts with y/N
+```
+
+### Searching
+
 ```bash
 vague search "find pictures of cats"
 vague search "todo lists"
 ```
 
-Results are ranked by relevance (both text and image matches in one output).
+Results are ranked by relevance, both text and image matches in one output.
 
-**Manage your index:**
+To see more or fewer results than the default without changing the setting permanently:
+
 ```bash
-vague clear              # Delete the current index
-vague index /path --overwrite  # Re-index (you'll be prompted)
+vague search "query" --limit 20   # returns 20 results for this search only
 ```
+
 
 ## Requirements for development
 
