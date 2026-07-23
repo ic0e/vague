@@ -230,7 +230,7 @@ fn main() -> anyhow::Result<()> {
                                     false
                                 }
                             } else {
-                                false
+                                true
                             }
                         } else {
                             !already_indexed.contains(&path_str)
