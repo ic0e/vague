@@ -53,7 +53,7 @@ enum Commands {
         /// The query string to look for (e.g., "legal documents")
         query: String,
 
-        /// Optional: Number of results to return (default is 5)
+        /// Optional: Number of results to return (overwrites the default in settings once)
         /// use --limit <num> or -l <num> 
         #[arg(short, long)]
         limit: Option<usize>,
@@ -72,7 +72,7 @@ enum Commands {
     /// Clears the entire search index. All indexed folders will need to be re-indexed.
     Clear,
 
-    /// Downloads and caches both AI models (CLIP image + CLIP text) into ~/.vague_cache.
+    /// Downloads and caches all embedding models into ~/.vague_cache.
     /// Run this once after installation so index and search start instantly.
     Setup,
 }
@@ -185,16 +185,16 @@ fn main() -> anyhow::Result<()> {
                 let (in_folder, outside_folder): (Vec<_>, Vec<_>) =
                     existing.into_iter().partition(|e| {
                         if let Ok(canon_entry) = std::fs::canonicalize(&e.path) {
-                            // file still exists — reliable canonical comparison
+                            // file still exists - reliable canonical comparison
                             canon_entry.starts_with(&canon_folder)
                         } else {
-                            // file is gone/moved — stored paths are already canonicalized
+                            // file is gone or moved - stored paths are already canonicalized
                             // absolute paths, so compare directly against canon_folder
                             Path::new(&e.path).starts_with(&canon_folder)
                         }
                     });
 
-                // keep in-folder entries whose files still exist on disk
+                // keep in folder entries whose files still exist on disk
                 let in_folder_count = in_folder.len();
                 let kept: Vec<_> = in_folder
                     .into_iter()
@@ -203,7 +203,7 @@ fn main() -> anyhow::Result<()> {
                 let pruned = in_folder_count - kept.len();
                 let mut skipped: usize = 0;
 
-                // build a set of already-indexed canonical paths so we skip them
+                // build a set of already indexed canonical paths so we skip them
                 let already_indexed: HashSet<String> = kept
                     .iter()
                     .filter_map(|e| {
@@ -213,16 +213,35 @@ fn main() -> anyhow::Result<()> {
                     })
                     .collect();
 
-                // only embed files that aren't already in the index
                 let new_paths: Vec<std::path::PathBuf> = current_paths
                     .into_iter()
-                    .filter(|p| !already_indexed.contains(&p.to_string_lossy().to_string()))
+                    .filter(|p| {
+                        let path_str = p.to_string_lossy().to_string();
+
+                        // ensure running the ocr tag after indexing normally will work without having to --overwrite
+                        if ocr {
+                            if let Some(entry) = kept.iter().find(|e| e.path == path_str) {
+                                // check if a file has been through OCR by seeing if filename = text,
+                                // since that happens by default if OCR isn't ran.
+                                if let Some(filename) = Path::new(&entry.path).file_name() {
+                                    let filename_str = filename.to_string_lossy().to_string();
+                                    filename_str == entry.text
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        } else {
+                            !already_indexed.contains(&path_str)
+                        }
+                    })
                     .collect();
 
                 let added = new_paths.len();
 
                 if new_paths.is_empty() {
-                    println!("{}", "Nothing new to index — all files already up to date.".dimmed());
+                    println!("{}", "Nothing new to index, all files already up to date.".dimmed());
                 } else {
                     println!(
                         "{}",
@@ -236,9 +255,25 @@ fn main() -> anyhow::Result<()> {
                     indexer::index_file_list(&new_paths, &mut skipped, ocr)?
                 };
 
-                // merge: other folders + surviving in-folder entries + newly embedded
+                // merge the current entries but remove the duplicates caused from re-OCRing
                 let mut final_entries = outside_folder;
-                final_entries.extend(kept);
+                if ocr {
+                    // remove entries that are being OCRd
+                    let paths_being_ocr: HashSet<String> = new_paths
+                        .iter()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .collect();
+                    
+                    let kept_filtered: Vec<_> = kept
+                        .into_iter()
+                        .filter(|e| !paths_being_ocr.contains(&e.path))
+                        .collect();
+                    
+                    final_entries.extend(kept_filtered);
+                } else {
+                    final_entries.extend(kept);
+                }
+                
                 final_entries.extend(new_entries);
 
                 store::save_index(&final_entries, db_path.to_str().unwrap())?;
