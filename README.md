@@ -41,23 +41,26 @@ vague search search "tower-http" --ocr --limit 1
 
 ### Windows
 1. Create a folder for vague like `C:\tools`
-2. Download `vague.exe` from [Releases](https://github.com/ic0e/vague/releases) & put it in your folder (`C:/tools`)
-3. Add `C:\tools` to your PATH (if you want to use vague from any directory:)
+2. Download `vague.zip` from [Releases](https://github.com/ic0e/vague/releases) & extract its contents directly into `C:\tools` (ensure the `models` folder is in the same directory as `vague.exe`)
+3. Add `C:\tools` to your PATH (if you want to use vague from any directory):
    - Open Settings -> search "environment variables" -> "Edit the system environment variables"
    - Click "Environment Variables" -> under "User variables" click "New"
    - Variable name: `PATH`
-   - Variable value: `C:\tools` (or your path folder)
+   - Variable value: `C:\tools` (or your chosen folder)
    - OK, restart your terminal
 4. Run `vague --help` from any terminal
 
 ### Linux/macOS
-1. Download `vague.exe` from [Releases](https://github.com/ic0e/vague/releases)
-2. Move it to your PATH:
+1. Download `vague.zip` from [Releases](https://github.com/ic0e/vague/releases) and extract it.
+2. Move the binary to your PATH and ensure the `models` folder is placed where `vague` expects it:
 ```bash
    sudo mv vague /usr/local/bin/
-   chmod +x /usr/local/bin/vague
+   sudo chmod +x /usr/local/bin/vague
+   sudo mkdir -p /usr/local/share/vague
+   sudo mv models/ /usr/local/share/vague/
 ```
-3. Run `vague --help` from anywhere
+
+*(Note: If `vague` looks for the `models` folder relative to the executable's path, you can alternatively keep the binary and the `models` folder together in a dedicated directory like `/opt/vague/` and symlink just the binary to `/usr/local/bin/vague`)*.
 
 ### From Source (requires Rust + C++ dev tools 2022)
 ```bash
