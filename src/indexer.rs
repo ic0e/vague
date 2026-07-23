@@ -149,14 +149,23 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
         .collect();
     
     if ocr {
-        pb.set_message("Running OCR on images...");
-
         let image_entries: Vec<(usize, String)> = result
             .iter()
             .enumerate()
             .filter(|(_, e)| e.embedding_type == EmbeddingType::Clip)
             .map(|(i, e)| (i, e.path.clone()))
             .collect();
+
+        let pb_ocr = indicatif::ProgressBar::new(image_entries.len() as u64);
+        pb_ocr.set_style(
+            indicatif::ProgressStyle::default_bar()
+                .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {msg}")
+                .expect("static template should compile")
+                .progress_chars("#>-")
+        );
+        pb_ocr.set_message("Running OCR on images...");
+
+        let pb_ocr_thread = pb_ocr.clone();
 
         let ocr_results: Vec<(usize, Option<String>)> = std::thread::spawn(move || {
             let engine = match crate::ocr::init_global_ocr() {
@@ -166,7 +175,6 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                     return vec![];
                 }
             };
-
             image_entries
                 .into_iter()
                 .map(|(idx, path_str)| {
@@ -179,6 +187,8 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                         let text = engine.get_text(&ocr_input).ok()?;
                         Some(text)
                     })();
+                    pb_ocr_thread.inc(1);
+                    
                     (idx, text)
                 })
                 .collect()
@@ -193,6 +203,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                 }
             }
         }
+        pb_ocr.finish_with_message("OCR complete");
     }
 
     pb.finish_with_message("Done!");
