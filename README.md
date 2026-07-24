@@ -90,6 +90,7 @@ vague setup       # downloads the text and image embedding models used for index
 Running vague for the first time creates a settings file. Current settings:
 
 * limit - how many results search returns
+* depth - how deep indexing goes
 
 To change a setting:
 
@@ -101,6 +102,13 @@ Example:
 
 ```bash
 vague settings limit 10   # search now returns 10 results instead of the default 5
+vague settings depth 1    # only indexes 1 directory deep
+```
+
+By default, the values are: 
+```toml
+limit = 10 
+depth = 9999 # a big number so it goes as deep as possible by default
 ```
 
 ### Indexing
@@ -154,6 +162,12 @@ or in one step:
 
 ```bash
 vague index . --overwrite   # clears and re-indexes in place, prompts with y/N
+```
+
+To change the depth of indexing just once without changing your settings:
+
+```bash
+vague index <folder> --depth <value>
 ```
 
 ### Searching
