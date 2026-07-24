@@ -63,16 +63,21 @@ enum Commands {
     },
     
     #[command(arg_required_else_help = true)]
-    /// Changes an application setting in settings.toml
-    Settings{
-        /// The name of the setting to change (e.g., "limit")
-        /// 
-        /// Current settings:
-        /// limit - changes how many results get outputted when running search
-        /// depth - how deep in directories the indexer goes
+    #[command(verbatim_doc_comment)]
+    /// Change an application setting in settings.toml
+    ///
+    /// Available settings:
+    ///   limit  - number of results returned by `search`
+    ///   depth  - how many directory levels the indexer will traverse
+    ///
+    /// Example:
+    ///   vague settings limit 10
+    ///   vague settings depth 3
+    Settings {
+        /// Name of the setting to change (e.g. "limit", "depth")
         setting_name: String,
-
-        /// The new value of the setting (e.g., "10")
+    
+        /// New value for the setting (e.g. "10")
         setting_value: String,
     },
     
