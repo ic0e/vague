@@ -45,6 +45,9 @@ enum Commands {
 
         #[arg(long)]
         ocr: bool,
+
+        #[arg(long)]
+        depth: Option<usize>,
     },
 
     /// Searches your indexed files using a natural language query
@@ -63,6 +66,10 @@ enum Commands {
     /// Changes an application setting in settings.toml
     Settings{
         /// The name of the setting to change (e.g., "limit")
+        /// 
+        /// Current settings:
+        /// limit - changes how many results get outputted when running search
+        /// depth - how deep in directories the indexer goes
         setting_name: String,
 
         /// The new value of the setting (e.g., "10")
@@ -79,6 +86,7 @@ enum Commands {
 
 fn main() -> anyhow::Result<()> {
     let mut limit_settings: u32 = 5;
+    let mut depth_settings: u32 = 9999;
 
     let path = std::env::current_exe()
         .expect("Failed to get executable path")
@@ -93,6 +101,9 @@ fn main() -> anyhow::Result<()> {
             if let Some(val) = config.get("limit").and_then(|v| v.as_integer()) {
                 limit_settings = val as u32;
             }
+            if let Some(val) = config.get("depth").and_then(|v| v.as_integer()) {
+                depth_settings = val as u32;
+            }
         }
         Ok(false) => {
             let mut file = std::fs::OpenOptions::new()
@@ -100,7 +111,7 @@ fn main() -> anyhow::Result<()> {
                 .create_new(true) 
                 .open(&settings_path)?;
 
-            file.write_all(b"limit = 5\n")?;
+            file.write_all(b"limit = 5\ndepth = 9999")?;
         }
         Err(e) => eprintln!("Error checking the settings file: {e}")
     }
@@ -130,7 +141,9 @@ fn main() -> anyhow::Result<()> {
             println!("{}", "Index cleared.".green().bold());
         }
 
-        Commands::Index { folder, overwrite, ocr } => {
+        Commands::Index { folder, overwrite, ocr, depth } => {
+            let depth = depth.unwrap_or(depth_settings as usize);
+            
             if overwrite {
                 // warn and ask for confirmation before nuking the index
                 println!("{}", "WARNING: --overwrite will discard the entire existing index and replace it with this folder only.".yellow().bold());
@@ -144,7 +157,7 @@ fn main() -> anyhow::Result<()> {
                     return Ok(());
                 }
 
-                let entries = indexer::build_index(Path::new(&folder), ocr)?;
+                let entries = indexer::build_index(Path::new(&folder), ocr, depth)?;
                 store::save_index(&entries, db_path.to_str().unwrap())?;
                 println!("Indexed {} successfully (overwrote previous index).", folder);
             } else {
@@ -168,6 +181,7 @@ fn main() -> anyhow::Result<()> {
 
                 // walk the folder and collect all current file paths (canonicalized)
                 let current_paths: Vec<std::path::PathBuf> = WalkDir::new(&folder)
+                    .max_depth(depth)
                     .into_iter()
                     .filter_map(|e| e.ok())
                     .filter(|e| e.file_type().is_file())
@@ -392,10 +406,18 @@ fn main() -> anyhow::Result<()> {
         }
 
         Commands::Settings { setting_name, setting_value }=> {
-            {
+            
+            if setting_name == "limit" || setting_name == "depth" {
                 let check: i32 = setting_value.parse().unwrap();
                 if check <= 0 {
                     panic!("Value must be above 0!");
+                }
+            }
+
+            if setting_name == "depth" {
+                let check: i32 = setting_value.parse().unwrap();
+                if check < 0 {
+                    panic!("Value must be above or equal to 0!");
                 }
             }
             

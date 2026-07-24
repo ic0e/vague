@@ -214,8 +214,10 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
 
 /// Indexes all files under `folder` from scratch.
 /// Used by `--overwrite` mode.
-pub fn build_index(folder: &Path, ocr: bool) -> anyhow::Result<Vec<IndexEntry>> {
+pub fn build_index(folder: &Path, ocr: bool, depth: usize) -> anyhow::Result<Vec<IndexEntry>> {
+
     let paths: Vec<PathBuf> = WalkDir::new(folder)
+        .max_depth(depth)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
