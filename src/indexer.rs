@@ -115,6 +115,14 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                             pb.inc(1);
                         }
                     }
+                    "docx" | "doc" => {
+                        if let Ok(text) = crate::extract::extract_docx_text(path){
+                            pending_texts.push(text);
+                            pending_paths.push(path);
+                        } else {
+                            pb.inc(1);
+                        }
+                    }
                     _ => {
                         pb.inc(1); // skip unknown files, don't try to do anything with them
                     }

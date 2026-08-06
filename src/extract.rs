@@ -1,5 +1,6 @@
 use std::fs;
 use pdf_oxide::PdfDocument;
+use office_oxide::Document;
 use std::path::{PathBuf};
 use std::error::Error;
 
@@ -20,5 +21,14 @@ pub fn extract_pdf_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
             text.push('\n'); // separate pages
     }
     
+    Ok(text)
+}
+
+pub fn extract_docx_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
+    let doc = Document::open(path)?;
+    let mut text = String::new();
+
+    text.push_str(&doc.plain_text());
+
     Ok(text)
 }
