@@ -24,11 +24,9 @@ pub fn extract_pdf_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
     Ok(text)
 }
 
-pub fn extract_docx_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
+/// Extract text from: docx, pttx, xlsx & more office file types.
+pub fn extract_office_file_text(path: &PathBuf) -> Result<String, Box<dyn Error>> {
     let doc = Document::open(path)?;
-    let mut text = String::new();
 
-    text.push_str(&doc.plain_text());
-
-    Ok(text)
+    Ok(doc.plain_text())
 }

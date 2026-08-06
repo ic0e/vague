@@ -115,8 +115,8 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                             pb.inc(1);
                         }
                     }
-                    "docx" | "doc" => {
-                        if let Ok(text) = crate::extract::extract_docx_text(path){
+                    "docx" | "doc" | "pptx" | "ppt" | "xlsx" | "xls" => {
+                        if let Ok(text) = crate::extract::extract_office_file_text(path){
                             pending_texts.push(text);
                             pending_paths.push(path);
                         } else {
