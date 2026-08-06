@@ -6,7 +6,7 @@
 
 ## Search Features
 
-**Text (.txt, .md, .pdf ...)**
+**Text (.txt, .md, .pdf, .docx, .pptx, ...)**
 1. File content is extracted and sent to a local text embedding model (nomic-embed-text) to produce a vector embedding.
 2. A search query is embedded the same way and compared against every indexed text file using cosine similarity.
 ```bash
@@ -227,7 +227,6 @@ vague/
 
 ## Roadmap & Future Features
 - Add showcase gifs in README
-- Docx support
 - Video support (frame extraction + CLIP embedding per frame)
 - Further optimization of indexing and searching
 
