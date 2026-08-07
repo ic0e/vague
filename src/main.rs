@@ -311,7 +311,7 @@ fn main() -> anyhow::Result<()> {
             let limit = limit.unwrap_or(limit_settings as usize);
             
             let spinner = indicatif::ProgressBar::new_spinner();
-            let _ = spinner.set_style(
+            spinner.set_style(
                 indicatif::ProgressStyle::default_spinner()
                     .tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏")
                     .template("{spinner:.green} {msg}")

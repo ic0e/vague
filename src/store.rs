@@ -65,7 +65,7 @@ pub fn search<'a>(
     // Merge both groups and rank together.
     let mut combined: Vec<(&IndexEntry, f32)> = clip_scored
         .into_iter()
-        .chain(text_scored.into_iter())
+        .chain(text_scored)
         .collect();
 
     combined.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());

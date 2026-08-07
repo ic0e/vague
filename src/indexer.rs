@@ -32,12 +32,10 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
     // Thread local macro, in order for the program to actually work with
     // multiple cores, the model can't be in a single variable to avoid it getting locked.
     thread_local! {
-        static TLS_IMAGE_MODEL: std::cell::RefCell<Option<ImageEmbedding>> = std::cell::RefCell::new(None);
+        static TLS_IMAGE_MODEL: std::cell::RefCell<Option<ImageEmbedding>> = const { std::cell::RefCell::new(None) };
     }
     thread_local! {
-        static TLS_OCR_ENGINE: std::cell::RefCell<Option<OcrEngine>> = {
-            std::cell::RefCell::new(None)
-        };
+        static TLS_OCR_ENGINE: std::cell::RefCell<Option<OcrEngine>> = const { std::cell::RefCell::new(None) };
     }
 
     let skipped_atomic = Arc::new(AtomicUsize::new(0));
@@ -73,13 +71,12 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                         let vector_res = TLS_IMAGE_MODEL.with(|cell| {
                             let mut borrow = cell.borrow_mut();
 
-                            if borrow.is_none() {
-                                if let Ok(model) = ImageEmbedding::try_new(
+                            if borrow.is_none()
+                                && let Ok(model) = ImageEmbedding::try_new(
                                     ImageInitOptions::new(ImageEmbeddingModel::ClipVitB32).with_cache_dir(cache_dir.clone())
                                 ) {
                                     *borrow = Some(model);
                                 }
-                            }
                             if let Some(model) = borrow.as_mut() {
                                 crate::clip::embed_image(model, path).ok()
                             } else {
@@ -98,7 +95,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
                         pb.inc(1);
                     }
                     "txt" | "md"  => {
-                        if let Some(text) = crate::extract::extract_text(path).ok() {
+                        if let Ok(text) = crate::extract::extract_text(path) {
                             pending_texts.push(text);
                             pending_paths.push(path);
                         } else {
@@ -131,7 +128,7 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
 
             // send all text files collected from this chunk for the embedding model
             if !pending_texts.is_empty() {
-                if let Some(vectors) = crate::embedder::embed_text_batch(&pending_texts, cache_dir.clone()).ok() {
+                if let Ok(vectors) = crate::embedder::embed_text_batch(&pending_texts, cache_dir.clone()) {
                     // match the returned vectors back up to their corresponding files
                     for (i, vector) in vectors.into_iter().enumerate() {
                         let path = pending_paths[i];
@@ -205,11 +202,10 @@ pub fn index_file_list(paths: &[PathBuf], skipped: &mut usize, ocr: bool) -> any
         .expect("OCR thread panicked");
 
         for (idx, text_opt) in ocr_results {
-            if let Some(text) = text_opt {
-                if !text.is_empty() {
+            if let Some(text) = text_opt
+                && !text.is_empty() {
                     result[idx].text = text;
                 }
-            }
         }
         pb_ocr.finish_with_message("OCR complete");
     }
