@@ -1,5 +1,5 @@
 # Contributing
-Thanks for your interest in `vague`. It's an early MVP so contributions, bug reports, and feedback are all welcome.
+Thanks for your interest in `vague`. It's in early beta, so contributions, bug reports, and feedback are all welcome.
 
 ## Opening issues
 Feel free to open your own issues. Prefix the title with the type of change - `feature`, `bug`, `refactor`, `docs`, etc. If the issue is larger in scope, add a short description of the problem and what a solution might look like. Example for the title; "bug: CLIP model labels dogs as food"

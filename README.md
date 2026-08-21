@@ -2,7 +2,7 @@
 
 **vague** is a local semantic search CLI engine. Searches match meaning instead of just text. A query like "that one legal file" returns a tax document even with zero word overlap. A query like "screenshot of an error message" returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with just metadata. Text and image results are ranked together in a single list.
 
-> *!! Early MVP:* the program is still WIP, expect rough edges
+> *!! Early beta:* the program is still WIP, expect rough edges
 
 ## Search Features
 
