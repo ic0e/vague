@@ -2,7 +2,7 @@
 
 **vague** is a local semantic search CLI engine. Searches match meaning instead of just text. A query like "that one legal file" returns a tax document even with zero word overlap. A query like "screenshot of an error message" returns a .png, since images are embedded into a vector space with CLIP instead of being tagged with just metadata. Text and image results are ranked together in a single list.
 
-> *!! Early beta:* the program is still WIP, expect rough edges
+> *Public beta (v0.2.1):* Stable build with all core features fully implemented. Maintained with occasional updates and feature additions.
 
 ## Search Features
 
@@ -40,15 +40,23 @@ vague search "tower-http" --limit 1
 ## Installation
 
 ### Windows
-1. Create a folder for vague like `C:\tools`
-2. Download `vague.zip` from [Releases](https://github.com/ic0e/vague/releases) & extract its contents directly into `C:\tools` (ensure the `models` folder is in the same directory as `vague.exe`)
-3. Add `C:\tools` to your PATH (if you want to use vague from any directory):
-   - Open Settings -> search "environment variables" -> "Edit the system environment variables"
-   - Click "Environment Variables" -> under "User variables" click "New"
-   - Variable name: `PATH`
-   - Variable value: `C:\tools` (or your chosen folder)
-   - OK, restart your terminal
-4. Run `vague --help` from any terminal
+**1. Download and extract**
+
+Download `vague.zip` from [Releases](https://github.com/ic0e/vague/releases) and extract the folder to a stable location, like `C:\tools\vague`.
+
+**2. Add to PATH (optional, for terminal-wide access)**
+
+If you want to run `vague` from any terminal:
+
+- Open Settings and search "environment variables"
+- Click "Edit the system environment variables" -> "Environment Variables"
+- Under "User variables", select **Path** and click **Edit** (or create it if missing)
+- Click **New** and add `C:\tools\vague`
+- Click **OK** and restart your terminal
+
+**3. Verify**
+
+Run `vague --help` from any terminal to verify if the program is installed.
 
 ### Linux/macOS
 1. Download `vague.zip` from [Releases](https://github.com/ic0e/vague/releases) and extract it.
