@@ -60,6 +60,11 @@ enum Commands {
         /// use --limit <num> or -l <num> 
         #[arg(short, long)]
         limit: Option<usize>,
+
+        /// Optional: Returns search results into a JSON file.
+        /// use --json anywhere in your command.
+        #[arg(long)]
+        json: bool
     },
     
     #[command(arg_required_else_help = true)]
@@ -307,7 +312,7 @@ fn main() -> anyhow::Result<()> {
             }
         }
 
-        Commands::Search { query, limit } => {
+        Commands::Search { query, limit, json } => {
             let limit = limit.unwrap_or(limit_settings as usize);
             
             let spinner = indicatif::ProgressBar::new_spinner();
@@ -340,7 +345,12 @@ fn main() -> anyhow::Result<()> {
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("Embedder returned an empty embedding batch for the search query"))?;
 
-            let results = store::search(&entries, &clip_query, &text_query, &query, limit);
+            let mut results = store::search(&entries, &clip_query, &text_query, &query, limit);
+            if json {
+                let json_out = results.iter().map(|(e, s)| serde_json::json!({ "path": e.path, "score": s })).collect::<Vec<_>>();
+                let _ = std::fs::File::create("results.json").map(|f| serde_json::to_writer_pretty(f, &json_out));
+            }
+            results.truncate(limit); // save the json first, then cut off the unwanted results
 
             spinner.finish_and_clear();
 
