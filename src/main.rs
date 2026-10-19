@@ -348,7 +348,15 @@ fn main() -> anyhow::Result<()> {
             let mut results = store::search(&entries, &clip_query, &text_query, &query);
             if json {
                 let json_out = results.iter().map(|(e, s)| serde_json::json!({ "path": e.path, "score": s })).collect::<Vec<_>>();
-                let _ = std::fs::File::create("results.json").map(|f| serde_json::to_writer_pretty(f, &json_out));
+
+                let processed_query = query
+                    .to_lowercase()
+                    .replace(' ', "_")
+                    .replace('-', "_");
+                
+                let json_file_name = format!("{}_results.json", processed_query);
+                
+                let _ = std::fs::File::create(json_file_name).map(|f| serde_json::to_writer_pretty(f, &json_out));
             }
             results.truncate(limit); // save the json first, then cut off the unwanted results
 
