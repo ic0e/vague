@@ -345,7 +345,7 @@ fn main() -> anyhow::Result<()> {
                 .next()
                 .ok_or_else(|| anyhow::anyhow!("Embedder returned an empty embedding batch for the search query"))?;
 
-            let mut results = store::search(&entries, &clip_query, &text_query, &query, limit);
+            let mut results = store::search(&entries, &clip_query, &text_query, &query);
             if json {
                 let json_out = results.iter().map(|(e, s)| serde_json::json!({ "path": e.path, "score": s })).collect::<Vec<_>>();
                 let _ = std::fs::File::create("results.json").map(|f| serde_json::to_writer_pretty(f, &json_out));

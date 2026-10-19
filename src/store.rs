@@ -35,7 +35,6 @@ pub fn search<'a>(
     clip_query: &[f32],
     text_query: &[f32],
     raw_query_str: &str,
-    top_n: usize,
 ) -> Vec<(&'a IndexEntry, f32)> {
     // Score each entry against its own embedding space.
     let mut clip_scored: Vec<(&IndexEntry, f32)> = entries
@@ -69,7 +68,6 @@ pub fn search<'a>(
         .collect();
 
     combined.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-    combined.truncate(top_n);
     combined
 }
 
